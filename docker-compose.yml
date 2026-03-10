@@ -1,0 +1,38 @@
+services:
+  database:
+    image: postgres:17-alpine
+    ports:
+      - "${DATABASE_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  engine:
+    image: node:22-alpine
+    working_dir: /app
+    ports:
+      - "${ENGINE_PORT}:3000"
+    environment:
+      DATABASE_URL: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:5432/${DATABASE_NAME}"
+    volumes:
+      - ./apps/engine:/app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - database
+
+  studio:
+    image: node:22-alpine
+    working_dir: /app
+    ports:
+      - "${STUDIO_PORT}:5173"
+    volumes:
+      - ./apps/studio:/app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - engine
+
+volumes:
+  pgdata:
