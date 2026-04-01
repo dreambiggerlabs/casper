@@ -4,6 +4,20 @@ Coding conventions for the Casper Engine codebase.
 
 ---
 
+## Simplicity
+
+Keep everything simple. Do not over-engineer.
+
+- **Solve the problem at hand** — do not build for hypothetical future requirements that do not exist yet.
+- **Prefer clear, boring code** — clever abstractions that nobody else can follow are a liability, not an asset.
+- **One layer of indirection is enough** — if you need a factory that creates a builder that configures a provider, you have gone too far.
+- **Delete code you do not need** — dead code, unused utilities, and speculative features add confusion. Remove them.
+- **Start concrete, abstract later** — write the straightforward implementation first. Only introduce abstractions when a real, repeated pattern emerges.
+
+If a junior developer cannot understand the code within a few minutes, it is too complex.
+
+---
+
 ## SOLID Principles
 
 All code must follow the SOLID principles. These are not guidelines — they are requirements.
@@ -65,31 +79,31 @@ Core bounded contexts in Casper Engine:
 
 ### Module Structure
 
-Each bounded context maps to a **domain directory** directly under `src/`:
+Each bounded context maps to a **domain directory** directly under `src/`. Directory and file names always use the **singular** form of the domain name.
 
 ```
 src/
 ├── shared/                    # cross-cutting concerns
 │   ├── config/                # configuration loading
 │   ├── database/              # connection, migrations, transaction helpers
-│   ├── errors/                # base error classes
+│   ├── error/                 # base error classes
 │   ├── middleware/             # auth, logging, error handling
-│   └── types/                 # shared types, utility types
-├── tasks/
-│   ├── tasks.schema.ts        # Drizzle table + Zod schemas
-│   ├── tasks.repository.ts    # data access
-│   ├── tasks.service.ts       # business logic
-│   ├── tasks.routes.ts        # HTTP handlers
-│   └── tasks.types.ts         # domain types and interfaces
-├── agents/
+│   └── type/                  # shared types, utility types
+├── task/
+│   ├── task.schema.ts         # Drizzle table + Zod schemas
+│   ├── task.repository.ts     # data access
+│   ├── task.service.ts        # business logic
+│   ├── task.routes.ts         # HTTP handlers
+│   └── task.types.ts          # domain types and interfaces
+├── agent/
 ├── pipeline/
-├── integrations/
-└── workers/
+├── integration/
+└── worker/
 ```
 
 `src/shared/` contains code used across multiple domains — database utilities, base middleware, common types. It has **no domain logic**.
 
-Each domain directory (`src/tasks/`, `src/agents/`, etc.) owns its schema, logic, and routes. No domain imports another domain's repository or internal types directly — communicate through the service layer or shared contracts.
+Each domain directory (`src/task/`, `src/agent/`, etc.) owns its schema, logic, and routes. No domain imports another domain's repository or internal types directly — communicate through the service layer or shared contracts.
 
 ### Entities and Value Objects
 
@@ -187,7 +201,7 @@ Imports are organized in this order, separated by blank lines:
 
 1. Node.js built-ins (`fs`, `path`, `http`)
 2. External packages (`express`, `zod`, `drizzle-orm`)
-3. Internal modules (`@/shared/`, `@/tasks/`)
+3. Internal modules (`@/shared/`, `@/task/`)
 4. Relative imports (`./`, `../`)
 
 Use `@/` path alias for imports from `src/`.
@@ -225,17 +239,28 @@ All pull requests must pass:
 
 ## Naming Conventions
 
+### Directories
+
+All directories use **singular** names — the folder represents the domain concept, not a collection.
+
+| Type | Convention | Example |
+|---|---|---|
+| Domain directory | singular, lowercase | `src/task/`, `src/agent/`, `src/worker/` |
+| Shared subdirectory | singular, lowercase | `src/shared/error/`, `src/shared/type/` |
+
 ### Files
+
+All file names use the **singular** form of the domain name.
 
 | Type | Pattern | Example |
 |---|---|---|
-| Schema | `{domain}.schema.ts` | `tasks.schema.ts` |
-| Repository | `{domain}.repository.ts` | `tasks.repository.ts` |
-| Service | `{domain}.service.ts` | `tasks.service.ts` |
-| Routes | `{domain}.routes.ts` | `tasks.routes.ts` |
-| Types | `{domain}.types.ts` | `tasks.types.ts` |
-| Test | `{file}.test.ts` | `tasks.service.test.ts` |
-| Integration test | `{file}.integration.test.ts` | `tasks.repository.integration.test.ts` |
+| Schema | `{domain}.schema.ts` | `task.schema.ts` |
+| Repository | `{domain}.repository.ts` | `task.repository.ts` |
+| Service | `{domain}.service.ts` | `task.service.ts` |
+| Routes | `{domain}.routes.ts` | `task.routes.ts` |
+| Types | `{domain}.types.ts` | `task.types.ts` |
+| Test | `{file}.test.ts` | `task.service.test.ts` |
+| Integration test | `{file}.integration.test.ts` | `task.repository.integration.test.ts` |
 
 ### Code
 
@@ -279,9 +304,12 @@ When in doubt, choose the longer, clearer name. Code is read far more often than
 
 ### Database
 
+Table names use the pattern `{domain}_{entity}` in snake_case. When the entity name is the same as the domain, use just the entity name to avoid redundancy (e.g. `task` not `task_task`).
+
 | Type | Convention | Example |
 |---|---|---|
-| Tables | snake_case, plural | `tasks`, `agent_runs` |
+| Tables (entity = domain) | `{entity}` | `task`, `agent`, `worker` |
+| Tables (entity ≠ domain) | `{domain}_{entity}` | `agent_run`, `pipeline_step`, `task_assignment` |
 | Columns | snake_case | `created_at`, `task_id` |
 | Primary keys | `id` | `id` |
 | Foreign keys | `{table}_id` | `task_id`, `agent_id` |
@@ -348,7 +376,7 @@ Imports are organized in this order, separated by blank lines:
 
 1. Node.js built-ins (`fs`, `path`, `http`)
 2. External packages (`express`, `zod`, `drizzle-orm`)
-3. Internal modules (`@/shared/`, `@/tasks/`)
+3. Internal modules (`@/shared/`, `@/task/`)
 4. Relative imports (`./`, `../`)
 
 Use `@/` path alias for imports from `src/`.
@@ -386,17 +414,28 @@ All pull requests must pass:
 
 ## Naming Conventions
 
+### Directories
+
+All directories use **singular** names — the folder represents the domain concept, not a collection.
+
+| Type | Convention | Example |
+|---|---|---|
+| Domain directory | singular, lowercase | `src/task/`, `src/agent/`, `src/worker/` |
+| Shared subdirectory | singular, lowercase | `src/shared/error/`, `src/shared/type/` |
+
 ### Files
+
+All file names use the **singular** form of the domain name.
 
 | Type | Pattern | Example |
 |---|---|---|
-| Schema | `{domain}.schema.ts` | `tasks.schema.ts` |
-| Repository | `{domain}.repository.ts` | `tasks.repository.ts` |
-| Service | `{domain}.service.ts` | `tasks.service.ts` |
-| Routes | `{domain}.routes.ts` | `tasks.routes.ts` |
-| Types | `{domain}.types.ts` | `tasks.types.ts` |
-| Test | `{file}.test.ts` | `tasks.service.test.ts` |
-| Integration test | `{file}.integration.test.ts` | `tasks.repository.integration.test.ts` |
+| Schema | `{domain}.schema.ts` | `task.schema.ts` |
+| Repository | `{domain}.repository.ts` | `task.repository.ts` |
+| Service | `{domain}.service.ts` | `task.service.ts` |
+| Routes | `{domain}.routes.ts` | `task.routes.ts` |
+| Types | `{domain}.types.ts` | `task.types.ts` |
+| Test | `{file}.test.ts` | `task.service.test.ts` |
+| Integration test | `{file}.integration.test.ts` | `task.repository.integration.test.ts` |
 
 ### Code
 
@@ -440,9 +479,12 @@ When in doubt, choose the longer, clearer name. Code is read far more often than
 
 ### Database
 
+Table names use the pattern `{domain}_{entity}` in snake_case. When the entity name is the same as the domain, use just the entity name to avoid redundancy (e.g. `task` not `task_task`).
+
 | Type | Convention | Example |
 |---|---|---|
-| Tables | snake_case, plural | `tasks`, `agent_runs` |
+| Tables (entity = domain) | `{entity}` | `task`, `agent`, `worker` |
+| Tables (entity ≠ domain) | `{domain}_{entity}` | `agent_run`, `pipeline_step`, `task_assignment` |
 | Columns | snake_case | `created_at`, `task_id` |
 | Primary keys | `id` | `id` |
 | Foreign keys | `{table}_id` | `task_id`, `agent_id` |
