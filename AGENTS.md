@@ -31,6 +31,28 @@ Frontend code may exist in this repository, but the API is always built first. N
 
 ## 4. Docker Guidelines
 
+Everything runs inside Docker. The `docker-compose.yml` in the project root is the single source of truth for all services.
+
+### Running the stack
+
+```bash
+docker compose up        # start all services
+docker compose up -d     # start in background
+docker compose down      # stop all services
+```
+
+### Running commands inside a container
+
+Never install packages or run commands on the host. Use `docker compose exec` to run commands inside a running service container:
+
+```bash
+docker compose exec {service} npm install {package}
+docker compose exec {service} npm run typecheck
+docker compose exec {service} npm test
+```
+
+### Adding services
+
 Services must work via `docker-compose.yml` first — use `image`, `command`, `working_dir`, `environment`, and `volumes` directly in compose. Only add a `.docker/{service}/Dockerfile` when the service has build steps that cannot be expressed in `docker-compose.yml` (e.g. multi-stage builds, custom base images, compiled dependencies). Every new service must run with `docker compose up` before introducing any additional Docker files.
 
 ## 5. Definition of Done
