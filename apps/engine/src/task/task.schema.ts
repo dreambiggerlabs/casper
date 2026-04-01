@@ -8,7 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-import { projects } from "../projects/projects.schema.js";
+import { projects } from "../project/project.schema.js";
 
 export const tasks = pgTable(
   "tasks",

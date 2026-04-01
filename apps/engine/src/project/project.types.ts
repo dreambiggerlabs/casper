@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type {
   createProjectSchema,
   updateProjectSchema,
-} from "./projects.schema.js";
+} from "./project.schema.js";
 
 export interface Project {
   uuid: string;
