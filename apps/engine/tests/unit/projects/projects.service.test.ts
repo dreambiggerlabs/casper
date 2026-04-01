@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { NotFoundError, ValidationError } from "../shared/errors/index.js";
+import { NotFoundError, ValidationError } from "../../../src/shared/errors/index.js";
 
-import { ProjectService } from "./projects.service.js";
-import type { ProjectRepository, Project } from "./projects.types.js";
+import { ProjectService } from "../../../src/projects/projects.service.js";
+import type { ProjectRepository, Project } from "../../../src/projects/projects.types.js";
 
 function createMockRepository(): ProjectRepository {
   return {
