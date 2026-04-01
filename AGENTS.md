@@ -16,6 +16,8 @@ Before making changes, read in this order:
 3. `doc/TECH.md`
 4. `ROADMAP.md`
 
+**`doc/CONVENTIONS.md` is mandatory.** Every rule in that file — naming, structure, simplicity, SOLID, database conventions — must be followed without exception. Do not deviate, improvise, or take shortcuts. If your code does not conform to `CONVENTIONS.md`, it is wrong.
+
 ## 3. API-First Principle
 
 Casper Engine is a **standalone API** — it does not ship with or depend on any frontend.
