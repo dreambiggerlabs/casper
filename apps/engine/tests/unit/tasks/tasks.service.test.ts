@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { NotFoundError, ValidationError } from "../shared/errors/index.js";
+import { NotFoundError, ValidationError } from "../../../src/shared/errors/index.js";
 
-import type { ProjectReader } from "../projects/projects.types.js";
+import type { ProjectReader } from "../../../src/projects/projects.types.js";
 
-import { TaskService } from "./tasks.service.js";
-import type { TaskRepository, Task } from "./tasks.types.js";
+import { TaskService } from "../../../src/tasks/tasks.service.js";
+import type { TaskRepository, Task } from "../../../src/tasks/tasks.types.js";
 
 function createMockTaskRepository(): TaskRepository {
   return {
