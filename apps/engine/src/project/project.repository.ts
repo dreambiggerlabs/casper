@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 
-import { projects } from "./projects.schema.js";
+import { projects } from "./project.schema.js";
 import type {
   CreateProject,
   Project,
   ProjectRepository,
   UpdateProject,
-} from "./projects.types.js";
+} from "./project.types.js";
 
 function toProject(row: typeof projects.$inferSelect): Project {
   return {

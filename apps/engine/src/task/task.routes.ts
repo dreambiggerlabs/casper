@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import type { TaskService } from "./tasks.service.js";
+import type { TaskService } from "./task.service.js";
 
 export function createTaskRoutes(service: TaskService): Router {
   const router = Router();

@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import type { ProjectService } from "./projects.service.js";
+import type { ProjectService } from "./project.service.js";
 
 export function createProjectRoutes(service: ProjectService): Router {
   const router = Router();

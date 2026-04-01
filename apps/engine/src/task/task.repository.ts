@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 
-import { tasks } from "./tasks.schema.js";
+import { tasks } from "./task.schema.js";
 import type {
   CreateTask,
   Task,
   TaskRepository,
   UpdateTask,
-} from "./tasks.types.js";
+} from "./task.types.js";
 
 function toTask(row: typeof tasks.$inferSelect): Task {
   return {

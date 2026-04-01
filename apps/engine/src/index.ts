@@ -7,13 +7,13 @@ import { db } from "./shared/database/index.js";
 import { errorHandler } from "./shared/middleware/error-handler.js";
 import { openApiSpec } from "./shared/openapi/index.js";
 
-import { DrizzleProjectRepository } from "./projects/projects.repository.js";
-import { ProjectService } from "./projects/projects.service.js";
-import { createProjectRoutes } from "./projects/projects.routes.js";
+import { DrizzleProjectRepository } from "./project/project.repository.js";
+import { ProjectService } from "./project/project.service.js";
+import { createProjectRoutes } from "./project/project.routes.js";
 
-import { DrizzleTaskRepository } from "./tasks/tasks.repository.js";
-import { TaskService } from "./tasks/tasks.service.js";
-import { createTaskRoutes } from "./tasks/tasks.routes.js";
+import { DrizzleTaskRepository } from "./task/task.repository.js";
+import { TaskService } from "./task/task.service.js";
+import { createTaskRoutes } from "./task/task.routes.js";
 
 const app = express();
 const port = process.env["PORT"] ?? 3000;

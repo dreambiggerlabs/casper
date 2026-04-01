@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-import type { createTaskSchema, updateTaskSchema } from "./tasks.schema.js";
+import type { createTaskSchema, updateTaskSchema } from "./task.schema.js";
 
 export interface Task {
   uuid: string;

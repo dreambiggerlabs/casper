@@ -4,10 +4,10 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
-import type { ProjectReader } from "../projects/projects.types.js";
+import type { ProjectReader } from "../project/project.types.js";
 
-import { createTaskSchema, updateTaskSchema } from "./tasks.schema.js";
-import type { Task, TaskRepository } from "./tasks.types.js";
+import { createTaskSchema, updateTaskSchema } from "./task.schema.js";
+import type { Task, TaskRepository } from "./task.types.js";
 
 export class TaskService {
   constructor(

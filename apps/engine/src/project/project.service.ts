@@ -4,8 +4,8 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
-import { createProjectSchema, updateProjectSchema } from "./projects.schema.js";
-import type { Project, ProjectRepository } from "./projects.types.js";
+import { createProjectSchema, updateProjectSchema } from "./project.schema.js";
+import type { Project, ProjectRepository } from "./project.types.js";
 
 export class ProjectService {
   constructor(private readonly repository: ProjectRepository) {}
