@@ -79,7 +79,7 @@ Core bounded contexts in Casper Engine:
 
 ### Module Structure
 
-Each bounded context maps to a **domain directory** directly under `src/`. Directory and file names always use the **singular** form of the domain name.
+Each bounded context maps to a **domain directory** directly under `src/`. Directory and file names inside `src/` always use the **singular** form of the domain name. Test directories that mirror the `src/` structure (e.g. `tests/unit/task/`) follow the same convention. Root-level directories, config folders, and tooling directories are unaffected.
 
 ```
 src/
@@ -241,16 +241,17 @@ All pull requests must pass:
 
 ### Directories
 
-All directories use **singular** names — the folder represents the domain concept, not a collection.
+Directories inside `src/` use **singular** names — the folder represents the domain concept, not a collection. Test directories that mirror the `src/` structure (e.g. `tests/unit/`, `tests/integration/`) must use the same singular names. Root-level directories, config folders, and tooling directories are unaffected.
 
 | Type | Convention | Example |
 |---|---|---|
 | Domain directory | singular, lowercase | `src/task/`, `src/agent/`, `src/worker/` |
 | Shared subdirectory | singular, lowercase | `src/shared/error/`, `src/shared/type/` |
+| Test mirror directory | singular, lowercase | `tests/unit/task/`, `tests/integration/agent/` |
 
 ### Files
 
-All file names use the **singular** form of the domain name.
+File names inside `src/` and mirrored test directories use the **singular** form of the domain name.
 
 | Type | Pattern | Example |
 |---|---|---|
@@ -416,7 +417,7 @@ All pull requests must pass:
 
 ### Directories
 
-All directories use **singular** names — the folder represents the domain concept, not a collection.
+Directories inside `src/` use **singular** names — the folder represents the domain concept, not a collection. This convention applies only to `src/`; root-level directories, config folders, and tooling directories are unaffected.
 
 | Type | Convention | Example |
 |---|---|---|
@@ -425,7 +426,7 @@ All directories use **singular** names — the folder represents the domain conc
 
 ### Files
 
-All file names use the **singular** form of the domain name.
+File names inside `src/` use the **singular** form of the domain name.
 
 | Type | Pattern | Example |
 |---|---|---|
