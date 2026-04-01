@@ -13,6 +13,7 @@ services:
   engine:
     image: node:22-alpine
     working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "${ENGINE_PORT}:3000"
     environment:
@@ -26,6 +27,7 @@ services:
   studio:
     image: node:22-alpine
     working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "${STUDIO_PORT}:5173"
     volumes:
