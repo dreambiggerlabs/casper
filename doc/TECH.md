@@ -57,6 +57,18 @@ API endpoints are documented using the **OpenAPI 3.x** specification. The intera
 
 ---
 
+## Studio (Frontend)
+
+The **Studio** is a responsive, **mobile-first** web application. All layouts and components are designed for small screens first, then progressively enhanced for tablet and desktop viewports.
+
+- **Mobile-first CSS** — base styles target mobile, wider breakpoints are added with `min-width` media queries.
+- **Touch-friendly** — interactive elements are sized and spaced for touch input.
+- **Responsive layouts** — every view must work from 320px to wide desktop without horizontal scrolling or broken layouts.
+
+The API is always built before any Studio work. The Studio consumes the API — it never contains business logic.
+
+---
+
 ## Testing
 
 **Vitest** is the test runner. All tests are written in TypeScript and colocated with the code they cover.
@@ -65,12 +77,11 @@ API endpoints are documented using the **OpenAPI 3.x** specification. The intera
 
 ```
 src/
-├── modules/
-│   ├── tasks/
-│   │   ├── tasks.service.ts
-│   │   ├── tasks.service.test.ts      # unit tests
-│   │   ├── tasks.routes.ts
-│   │   └── tasks.routes.test.ts       # route/integration tests
+├── task/
+│   ├── task.service.ts
+│   ├── task.service.test.ts        # unit tests
+│   ├── task.routes.ts
+│   └── task.routes.test.ts         # route/integration tests
 ```
 
 * **Unit tests** — `*.test.ts` next to the source file.
@@ -82,7 +93,7 @@ src/
 Test descriptions follow the pattern: **"should [expected behaviour] when [condition]"**.
 
 ```ts
-describe("TasksService", () => {
+describe("TaskService", () => {
   it("should return a paginated list when tasks exist", async () => { ... });
   it("should throw NotFoundError when the task does not exist", async () => { ... });
 });
@@ -125,7 +136,7 @@ npm test
 npm run test:watch
 
 # specific file
-npx vitest run src/modules/tasks/tasks.service.test.ts
+npx vitest run src/task/task.service.test.ts
 ```
 
 ---
