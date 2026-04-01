@@ -37,6 +37,69 @@ Services must work via `docker-compose.yml` first — use `image`, `command`, `w
 
 A change is done when all are true:
 
-1. API docs (OpenAPI spec) are updated to reflect the changes
-2. Tests are written and passing
-3. Changes follow the API-first workflow (schema → service → route → docs)
+1. **API docs updated** — OpenAPI spec reflects all endpoint changes
+2. **Tests pass** — Unit and integration tests written and passing
+3. **API-first workflow followed** — Schema → Service → Route → Docs
+4. **Type check passes** — `npm run typecheck` succeeds
+5. **Lint passes** — `npm run lint` succeeds
+6. **Format check passes** — `npm run format:check` succeeds
+7. **Build succeeds** — `npm run build` succeeds
+
+## 6. Code Quality Requirements
+
+All code contributions must pass automated quality checks.
+
+### Mandatory Checks
+
+Run these before committing:
+
+| Check | Command | Purpose |
+|---|---|---|
+| Type check | `npm run typecheck` | Catches type errors |
+| Lint | `npm run lint` | Enforces code quality |
+| Format | `npm run format:check` | Ensures consistent style |
+| Test | `npm test` | Verifies behaviour |
+| Audit | `npm audit` | Security vulnerability check |
+
+### Pre-commit Enforcement
+
+Pre-commit hooks run automatically via lefthook:
+
+- **Formatting** — Prettier validates style
+- **Linting** — ESLint catches issues
+- **Type checking** — TypeScript verifies types
+- **Tests** — Vitest runs affected tests
+- **Audit** — npm audit checks for vulnerabilities
+
+Failed checks block the commit. Fix issues before committing.
+
+### CI Requirements
+
+All pull requests must pass CI checks:
+
+- Type check ✓
+- Lint ✓
+- Format check ✓
+- Tests ✓
+- Audit ✓ (no high/critical vulnerabilities)
+- Build ✓
+
+No exceptions. Fix failing checks before requesting review.
+
+## 7. Running Quality Checks
+
+```bash
+# Run all checks
+npm run check
+
+# Individual checks
+npm run typecheck
+npm run lint
+npm run lint:fix      # auto-fix lint issues
+npm run format
+npm run format:check
+npm test
+
+# Build
+npm run build
+```
