@@ -118,3 +118,273 @@ query(sql: string): Promise<Row[]>
 ### Ubiquitous Language
 
 Use the same terms in code, documentation, and conversation. If the team calls it a "task", the code uses `Task` — not `Job`, `Ticket`, or `Issue` internally. The domain vocabulary is defined once and used everywhere.
+
+---
+
+## Code Quality Standards
+
+All code must pass automated quality checks. These are non-negotiable requirements.
+
+### TypeScript Configuration
+
+TypeScript must run in strict mode. Use the default `strict: true` setting which enables:
+
+- `noImplicitAny`
+- `strictNullChecks`
+- `strictFunctionTypes`
+- `strictBindCallApply`
+- `strictPropertyInitialization`
+- `noImplicitThis`
+- `useUnknownInCatchVariables`
+- `alwaysStrict`
+
+**Run type checking:**
+
+```bash
+npm run typecheck
+```
+
+### Linting (ESLint)
+
+ESLint catches bugs and enforces code quality using `typescript-eslint` recommended configs.
+
+**Config:**
+
+- `typescript-eslint/strict` — strict type-checked rules
+- `typescript-eslint/stylistic` — consistent code style
+
+**Run before every commit:**
+
+```bash
+npm run lint
+```
+
+**Auto-fix issues:**
+
+```bash
+npm run lint:fix
+```
+
+### Formatting (Prettier)
+
+Prettier handles all formatting. No configuration debate — accept the defaults.
+
+**Run before every commit:**
+
+```bash
+npm run format:check
+```
+
+**Auto-format:**
+
+```bash
+npm run format
+```
+
+### Import Organization
+
+Imports are organized in this order, separated by blank lines:
+
+1. Node.js built-ins (`fs`, `path`, `http`)
+2. External packages (`express`, `zod`, `drizzle-orm`)
+3. Internal modules (`@/shared/`, `@/tasks/`)
+4. Relative imports (`./`, `../`)
+
+Use `@/` path alias for imports from `src/`.
+
+---
+
+## Pre-commit & CI Requirements
+
+### Pre-commit Hooks
+
+Pre-commit hooks run automatically via lefthook:
+
+1. **Format check** — Prettier validates formatting
+2. **Lint check** — ESLint validates code quality
+3. **Type check** — TypeScript validates types
+4. **Test affected files** — Vitest runs tests for changed files
+5. **Audit** — npm audit checks for vulnerabilities
+
+Failed checks block the commit. Fix issues before committing.
+
+### CI Pipeline
+
+All pull requests must pass:
+
+| Check | Command | Blocking |
+|---|---|---|
+| Type check | `npm run typecheck` | Yes |
+| Lint | `npm run lint` | Yes |
+| Format check | `npm run format:check` | Yes |
+| Tests | `npm test` | Yes |
+| Audit | `npm audit` | Yes |
+| Build | `npm run build` | Yes |
+
+---
+
+## Naming Conventions
+
+### Files
+
+| Type | Pattern | Example |
+|---|---|---|
+| Schema | `{domain}.schema.ts` | `tasks.schema.ts` |
+| Repository | `{domain}.repository.ts` | `tasks.repository.ts` |
+| Service | `{domain}.service.ts` | `tasks.service.ts` |
+| Routes | `{domain}.routes.ts` | `tasks.routes.ts` |
+| Types | `{domain}.types.ts` | `tasks.types.ts` |
+| Test | `{file}.test.ts` | `tasks.service.test.ts` |
+| Integration test | `{file}.integration.test.ts` | `tasks.repository.integration.test.ts` |
+
+### Code
+
+| Type | Convention | Example |
+|---|---|---|
+| Variables | camelCase | `taskList`, `pendingTasks` |
+| Functions | camelCase | `findTaskById`, `createTask` |
+| Classes | PascalCase | `TaskRepository`, `TaskDispatcher` |
+| Interfaces | PascalCase | `Task`, `TaskFilter` |
+| Type aliases | PascalCase | `TaskStatus`, `TaskPriority` |
+| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRIES`, `DEFAULT_TIMEOUT` |
+
+### Database
+
+| Type | Convention | Example |
+|---|---|---|
+| Tables | snake_case, plural | `tasks`, `agent_runs` |
+| Columns | snake_case | `created_at`, `task_id` |
+| Primary keys | `id` | `id` |
+| Foreign keys | `{table}_id` | `task_id`, `agent_id` |
+
+---
+
+## Code Quality Standards
+
+All code must pass automated quality checks. These are non-negotiable requirements.
+
+### TypeScript Configuration
+
+TypeScript must run in strict mode. Use the default `strict: true` setting which enables:
+
+- `noImplicitAny`
+- `strictNullChecks`
+- `strictFunctionTypes`
+- `strictBindCallApply`
+- `strictPropertyInitialization`
+- `noImplicitThis`
+- `useUnknownInCatchVariables`
+- `alwaysStrict`
+
+**Run type checking:**
+```bash
+npm run typecheck
+```
+
+### Linting (ESLint)
+
+ESLint catches bugs and enforces code quality using `typescript-eslint` recommended configs.
+
+**Config:**
+- `typescript-eslint/strict` — strict type-checked rules
+- `typescript-eslint/stylistic` — consistent code style
+
+**Run before every commit:**
+```bash
+npm run lint
+```
+
+**Auto-fix issues:**
+```bash
+npm run lint:fix
+```
+
+### Formatting (Prettier)
+
+Prettier handles all formatting. No configuration debate — accept the defaults.
+
+**Run before every commit:**
+```bash
+npm run format:check
+```
+
+**Auto-format:**
+```bash
+npm run format
+```
+
+### Import Organization
+
+Imports are organized in this order, separated by blank lines:
+
+1. Node.js built-ins (`fs`, `path`, `http`)
+2. External packages (`express`, `zod`, `drizzle-orm`)
+3. Internal modules (`@/shared/`, `@/tasks/`)
+4. Relative imports (`./`, `../`)
+
+Use `@/` path alias for imports from `src/`.
+
+---
+
+## Pre-commit & CI Requirements
+
+### Pre-commit Hooks
+
+Pre-commit hooks run automatically via lefthook:
+
+1. **Format check** — Prettier validates formatting
+2. **Lint check** — ESLint validates code quality
+3. **Type check** — TypeScript validates types
+4. **Test affected files** — Vitest runs tests for changed files
+5. **Audit** — npm audit checks for vulnerabilities
+
+Failed checks block the commit. Fix issues before committing.
+
+### CI Pipeline
+
+All pull requests must pass:
+
+| Check | Command | Blocking |
+|---|---|---|
+| Type check | `npm run typecheck` | Yes |
+| Lint | `npm run lint` | Yes |
+| Format check | `npm run format:check` | Yes |
+| Tests | `npm test` | Yes |
+| Audit | `npm audit` | Yes |
+| Build | `npm run build` | Yes |
+
+---
+
+## Naming Conventions
+
+### Files
+
+| Type | Pattern | Example |
+|---|---|---|
+| Schema | `{domain}.schema.ts` | `tasks.schema.ts` |
+| Repository | `{domain}.repository.ts` | `tasks.repository.ts` |
+| Service | `{domain}.service.ts` | `tasks.service.ts` |
+| Routes | `{domain}.routes.ts` | `tasks.routes.ts` |
+| Types | `{domain}.types.ts` | `tasks.types.ts` |
+| Test | `{file}.test.ts` | `tasks.service.test.ts` |
+| Integration test | `{file}.integration.test.ts` | `tasks.repository.integration.test.ts` |
+
+### Code
+
+| Type | Convention | Example |
+|---|---|---|
+| Variables | camelCase | `taskList`, `pendingTasks` |
+| Functions | camelCase | `findTaskById`, `createTask` |
+| Classes | PascalCase | `TaskRepository`, `TaskDispatcher` |
+| Interfaces | PascalCase | `Task`, `TaskFilter` |
+| Type aliases | PascalCase | `TaskStatus`, `TaskPriority` |
+| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRIES`, `DEFAULT_TIMEOUT` |
+
+### Database
+
+| Type | Convention | Example |
+|---|---|---|
+| Tables | snake_case, plural | `tasks`, `agent_runs` |
+| Columns | snake_case | `created_at`, `task_id` |
+| Primary keys | `id` | `id` |
+| Foreign keys | `{table}_id` | `task_id`, `agent_id` |
