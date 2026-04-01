@@ -15,15 +15,25 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "audit": "npm audit",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm audit"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm audit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "@scalar/express-api-reference": "^0.9.5",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.1.0",
+    "postgres": "^3.4.8",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "tsx": "^4.0.0",
