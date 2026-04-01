@@ -246,7 +246,36 @@ All pull requests must pass:
 | Classes | PascalCase | `TaskRepository`, `TaskDispatcher` |
 | Interfaces | PascalCase | `Task`, `TaskFilter` |
 | Type aliases | PascalCase | `TaskStatus`, `TaskPriority` |
-| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRIES`, `DEFAULT_TIMEOUT` |
+| Constants | SCREAMING_SNAKE_CASE | `MAXIMUM_RETRY_ATTEMPTS`, `DEFAULT_TIMEOUT_MILLISECONDS` |
+
+### Self-Explanatory Names
+
+All code must use **full, self-explanatory names**. Every function, method, variable, parameter, and constant must clearly communicate its purpose without requiring the reader to guess or look up context.
+
+#### Rules
+
+- **No abbreviations** — use `customer` not `cust`, `transaction` not `txn`, `repository` not `repo`
+- **No single-letter variables** — use `index` not `i`, `element` not `e`, `key` not `k` (exception: well-established mathematical formulas)
+- **Functions describe actions** — `calculateMonthlyRevenue()` not `calcRev()`, `validateUserInput()` not `valIn()`
+- **Booleans read as questions** — `isAuthenticated`, `hasPermission`, `shouldRetryRequest`
+- **Collections use plurals** — `customers` not `customerList`, `activeOrders` not `orderArr`
+- **Constants are descriptive** — `MAXIMUM_RETRY_ATTEMPTS` not `MAX_R`, `DEFAULT_TIMEOUT_MILLISECONDS` not `DEF_TO`
+
+#### Examples
+
+```typescript
+// ✗ Bad — unclear, abbreviated
+const res = await db.query(q);
+const fn = (u: User) => u.role === 'admin';
+for (let i = 0; i < items.length; i++) { ... }
+
+// ✓ Good — self-explanatory
+const queryResult = await database.query(userSearchQuery);
+const isAdministrator = (user: User) => user.role === 'admin';
+for (let itemIndex = 0; itemIndex < items.length; itemIndex++) { ... }
+```
+
+When in doubt, choose the longer, clearer name. Code is read far more often than it is written.
 
 ### Database
 
@@ -378,7 +407,36 @@ All pull requests must pass:
 | Classes | PascalCase | `TaskRepository`, `TaskDispatcher` |
 | Interfaces | PascalCase | `Task`, `TaskFilter` |
 | Type aliases | PascalCase | `TaskStatus`, `TaskPriority` |
-| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRIES`, `DEFAULT_TIMEOUT` |
+| Constants | SCREAMING_SNAKE_CASE | `MAXIMUM_RETRY_ATTEMPTS`, `DEFAULT_TIMEOUT_MILLISECONDS` |
+
+### Self-Explanatory Names
+
+All code must use **full, self-explanatory names**. Every function, method, variable, parameter, and constant must clearly communicate its purpose without requiring the reader to guess or look up context.
+
+#### Rules
+
+- **No abbreviations** — use `customer` not `cust`, `transaction` not `txn`, `repository` not `repo`
+- **No single-letter variables** — use `index` not `i`, `element` not `e`, `key` not `k` (exception: well-established mathematical formulas)
+- **Functions describe actions** — `calculateMonthlyRevenue()` not `calcRev()`, `validateUserInput()` not `valIn()`
+- **Booleans read as questions** — `isAuthenticated`, `hasPermission`, `shouldRetryRequest`
+- **Collections use plurals** — `customers` not `customerList`, `activeOrders` not `orderArr`
+- **Constants are descriptive** — `MAXIMUM_RETRY_ATTEMPTS` not `MAX_R`, `DEFAULT_TIMEOUT_MILLISECONDS` not `DEF_TO`
+
+#### Examples
+
+```typescript
+// ✗ Bad — unclear, abbreviated
+const res = await db.query(q);
+const fn = (u: User) => u.role === 'admin';
+for (let i = 0; i < items.length; i++) { ... }
+
+// ✓ Good — self-explanatory
+const queryResult = await database.query(userSearchQuery);
+const isAdministrator = (user: User) => user.role === 'admin';
+for (let itemIndex = 0; itemIndex < items.length; itemIndex++) { ... }
+```
+
+When in doubt, choose the longer, clearer name. Code is read far more often than it is written.
 
 ### Database
 
