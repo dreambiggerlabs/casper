@@ -139,6 +139,181 @@ export const openApiSpec = {
         },
       },
     },
+    "/tasks": {
+      post: {
+        tags: ["Tasks"],
+        summary: "Create a task",
+        operationId: "createTask",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateTask" },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Task created",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Task" },
+              },
+            },
+          },
+          "400": {
+            description: "Validation error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+          "404": {
+            description: "Project or parent task not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+      get: {
+        tags: ["Tasks"],
+        summary: "List all tasks",
+        operationId: "listTasks",
+        responses: {
+          "200": {
+            description: "List of tasks",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Task" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/tasks/{uuid}": {
+      get: {
+        tags: ["Tasks"],
+        summary: "Get a task by UUID",
+        operationId: "getTask",
+        parameters: [
+          {
+            name: "uuid",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Task found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Task" },
+              },
+            },
+          },
+          "404": {
+            description: "Task not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+      patch: {
+        tags: ["Tasks"],
+        summary: "Update a task",
+        operationId: "updateTask",
+        parameters: [
+          {
+            name: "uuid",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateTask" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Task updated",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Task" },
+              },
+            },
+          },
+          "400": {
+            description: "Validation error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+          "404": {
+            description: "Task, project, or parent task not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/projects/{projectId}/tasks": {
+      get: {
+        tags: ["Tasks"],
+        summary: "List tasks by project",
+        operationId: "listTasksByProject",
+        parameters: [
+          {
+            name: "projectId",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "List of tasks for the project",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Task" },
+                },
+              },
+            },
+          },
+          "404": {
+            description: "Project not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -170,6 +345,65 @@ export const openApiSpec = {
             type: "string",
             minLength: 1,
             maxLength: 255,
+          },
+        },
+      },
+      Task: {
+        type: "object",
+        required: [
+          "uuid",
+          "title",
+          "projectId",
+          "parentId",
+          "createdAt",
+          "updatedAt",
+        ],
+        properties: {
+          uuid: { type: "string", format: "uuid" },
+          title: { type: "string", maxLength: 255 },
+          projectId: { type: "string", format: "uuid" },
+          parentId: {
+            type: ["string", "null"],
+            format: "uuid",
+          },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      CreateTask: {
+        type: "object",
+        required: ["title", "projectId"],
+        properties: {
+          title: {
+            type: "string",
+            minLength: 1,
+            maxLength: 255,
+          },
+          projectId: {
+            type: "string",
+            format: "uuid",
+          },
+          parentId: {
+            type: "string",
+            format: "uuid",
+          },
+        },
+      },
+      UpdateTask: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            minLength: 1,
+            maxLength: 255,
+          },
+          projectId: {
+            type: "string",
+            format: "uuid",
+          },
+          parentId: {
+            type: ["string", "null"],
+            format: "uuid",
           },
         },
       },

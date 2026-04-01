@@ -1,4 +1,8 @@
-import { NotFoundError, ValidationError } from "../shared/errors/index.js";
+import {
+  NotFoundError,
+  ValidationError,
+  zodIssuesToViolations,
+} from "../shared/errors/index.js";
 
 import { createProjectSchema, updateProjectSchema } from "./projects.schema.js";
 import type { Project, ProjectRepository } from "./projects.types.js";
@@ -9,9 +13,8 @@ export class ProjectService {
   async createProject(input: unknown): Promise<Project> {
     const parsed = createProjectSchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues[0]?.message ?? "Invalid input",
-      );
+      const violations = zodIssuesToViolations(parsed.error.issues);
+      throw new ValidationError("Validation failed", violations);
     }
     return this.repository.create(parsed.data);
   }
@@ -31,9 +34,8 @@ export class ProjectService {
   async updateProject(uuid: string, input: unknown): Promise<Project> {
     const parsed = updateProjectSchema.safeParse(input);
     if (!parsed.success) {
-      throw new ValidationError(
-        parsed.error.issues[0]?.message ?? "Invalid input",
-      );
+      const violations = zodIssuesToViolations(parsed.error.issues);
+      throw new ValidationError("Validation failed", violations);
     }
 
     const updated = await this.repository.update(uuid, parsed.data);

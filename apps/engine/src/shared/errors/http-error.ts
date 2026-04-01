@@ -15,9 +15,26 @@ export class NotFoundError extends HttpError {
   }
 }
 
+export interface ValidationViolation {
+  field: string;
+  message: string;
+}
+
 export class ValidationError extends HttpError {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public readonly violations: ValidationViolation[] = [],
+  ) {
     super(400, message);
     this.name = "ValidationError";
   }
+}
+
+export function zodIssuesToViolations(
+  issues: { path: PropertyKey[]; message: string }[],
+): ValidationViolation[] {
+  return issues.map((issue) => ({
+    field: issue.path.join("."),
+    message: issue.message,
+  }));
 }

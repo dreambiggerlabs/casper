@@ -11,6 +11,10 @@ import { DrizzleProjectRepository } from "./projects/projects.repository.js";
 import { ProjectService } from "./projects/projects.service.js";
 import { createProjectRoutes } from "./projects/projects.routes.js";
 
+import { DrizzleTaskRepository } from "./tasks/tasks.repository.js";
+import { TaskService } from "./tasks/tasks.service.js";
+import { createTaskRoutes } from "./tasks/tasks.routes.js";
+
 const app = express();
 const port = process.env["PORT"] ?? 3000;
 
@@ -20,8 +24,12 @@ app.use(express.json());
 const projectRepository = new DrizzleProjectRepository(db);
 const projectService = new ProjectService(projectRepository);
 
+const taskRepository = new DrizzleTaskRepository(db);
+const taskService = new TaskService(taskRepository, projectRepository);
+
 // Routes
 app.use(createProjectRoutes(projectService));
+app.use(createTaskRoutes(taskService));
 
 // OpenAPI
 app.get("/openapi.json", (_req, res) => {
