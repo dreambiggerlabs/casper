@@ -15,7 +15,10 @@ import { DrizzleAgentRepository } from "./agent/agent.repository.js";
 import { AgentService } from "./agent/agent.service.js";
 import { createAgentRoutes } from "./agent/agent.routes.js";
 
-import { DrizzleWorkerRepository, DrizzleWorkerJobRepository } from "./worker/worker.repository.js";
+import {
+  DrizzleWorkerRepository,
+  DrizzleWorkerJobRepository,
+} from "./worker/worker.repository.js";
 import { WorkerService } from "./worker/worker.service.js";
 import { createWorkerRoutes } from "./worker/worker.routes.js";
 

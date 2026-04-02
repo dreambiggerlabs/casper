@@ -1,4 +1,11 @@
-import { pgTable, serial, uuid, varchar, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  uuid,
+  varchar,
+  timestamp,
+  foreignKey,
+} from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { task } from "../task/task.schema.js";

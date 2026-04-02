@@ -560,7 +560,13 @@ export const openApiSpec = {
             description: "Filter by task status",
             schema: {
               type: "string",
-              enum: ["pending", "assigned", "processing", "in_progress", "completed"],
+              enum: [
+                "pending",
+                "assigned",
+                "processing",
+                "in_progress",
+                "completed",
+              ],
             },
           },
           {
@@ -896,7 +902,14 @@ export const openApiSpec = {
       },
       WorkerJob: {
         type: "object",
-        required: ["uuid", "workerId", "type", "status", "createdAt", "updatedAt"],
+        required: [
+          "uuid",
+          "workerId",
+          "type",
+          "status",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
           uuid: { type: "string", format: "uuid" },
           workerId: { type: "string", format: "uuid" },
@@ -966,7 +979,13 @@ export const openApiSpec = {
           },
           status: {
             type: "string",
-            enum: ["pending", "assigned", "processing", "in_progress", "completed"],
+            enum: [
+              "pending",
+              "assigned",
+              "processing",
+              "in_progress",
+              "completed",
+            ],
           },
           agentId: {
             type: ["string", "null"],
@@ -1029,7 +1048,13 @@ export const openApiSpec = {
         properties: {
           status: {
             type: "string",
-            enum: ["pending", "assigned", "processing", "in_progress", "completed"],
+            enum: [
+              "pending",
+              "assigned",
+              "processing",
+              "in_progress",
+              "completed",
+            ],
           },
         },
       },

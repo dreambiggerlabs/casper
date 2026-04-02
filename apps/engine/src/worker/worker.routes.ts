@@ -24,7 +24,7 @@ export function createWorkerRoutes(service: WorkerService): Router {
 
   router.put("/workers/:uuid/heartbeat", async (request, response) => {
     const uuid = request.params["uuid"] ?? "";
-    const worker = await service.heartbeat(uuid, request.body);
+    const worker = await service.heartbeat(uuid);
     response.json(worker);
   });
 
@@ -45,7 +45,9 @@ export function createWorkerRoutes(service: WorkerService): Router {
       | undefined;
 
     if (!workerId) {
-      response.status(400).json({ error: "workerId query parameter is required" });
+      response
+        .status(400)
+        .json({ error: "workerId query parameter is required" });
       return;
     }
 

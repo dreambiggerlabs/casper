@@ -7,7 +7,11 @@ import type {
 } from "./worker.schema.js";
 
 export type WorkerStatus = "active" | "inactive";
-export type JobType = "execute_task" | "cleanup" | "start_preview" | "stop_preview";
+export type JobType =
+  | "execute_task"
+  | "cleanup"
+  | "start_preview"
+  | "stop_preview";
 export type JobStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export interface Worker {
@@ -53,13 +57,19 @@ export interface WorkerRepository extends WorkerReader, WorkerWriter {}
 
 export interface WorkerJobReader {
   findJobByUuid(uuid: string): Promise<WorkerJob | undefined>;
-  findJobsByWorkerId(workerId: string, status?: JobStatus): Promise<WorkerJob[]>;
+  findJobsByWorkerId(
+    workerId: string,
+    status?: JobStatus,
+  ): Promise<WorkerJob[]>;
   findJobByTaskId(taskId: string): Promise<WorkerJob | undefined>;
 }
 
 export interface WorkerJobWriter {
   createJob(workerId: string, data: CreateJob): Promise<WorkerJob>;
-  updateJobStatus(uuid: string, status: JobStatus): Promise<WorkerJob | undefined>;
+  updateJobStatus(
+    uuid: string,
+    status: JobStatus,
+  ): Promise<WorkerJob | undefined>;
 }
 
 export interface WorkerJobRepository extends WorkerJobReader, WorkerJobWriter {}

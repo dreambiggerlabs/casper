@@ -117,10 +117,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     const query = status
       ? and(eq(workerJob.workerId, workerId), eq(workerJob.status, status))
       : eq(workerJob.workerId, workerId);
-    const rows = await this.database
-      .select()
-      .from(workerJob)
-      .where(query);
+    const rows = await this.database.select().from(workerJob).where(query);
     return rows.map(toWorkerJob);
   }
 

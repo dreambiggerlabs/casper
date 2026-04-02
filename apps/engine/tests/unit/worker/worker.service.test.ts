@@ -106,7 +106,7 @@ describe("WorkerService", () => {
       vi.mocked(workerRepository.updateHeartbeat).mockResolvedValue(worker);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.heartbeat(worker.uuid, {});
+      const result = await service.heartbeat(worker.uuid);
 
       expect(result).toEqual(worker);
       expect(workerRepository.updateHeartbeat).toHaveBeenCalledWith(worker.uuid);
@@ -119,7 +119,7 @@ describe("WorkerService", () => {
 
       const service = new WorkerService(workerRepository, workerJobRepository);
 
-      await expect(service.heartbeat("nonexistent", {})).rejects.toThrow(
+      await expect(service.heartbeat("nonexistent")).rejects.toThrow(
         NotFoundError,
       );
     });

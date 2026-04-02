@@ -42,7 +42,7 @@ export class WorkerService {
     return randomBytes(32).toString("hex");
   }
 
-  async heartbeat(uuid: string, _input: unknown): Promise<Worker> {
+  async heartbeat(uuid: string): Promise<Worker> {
     const worker = await this.workerRepository.findByUuid(uuid);
     if (!worker) {
       throw new NotFoundError("Worker", uuid);
@@ -97,10 +97,7 @@ export class WorkerService {
     return this.workerJobRepository.createJob(workerId, parsed.data);
   }
 
-  async updateJobStatus(
-    uuid: string,
-    input: unknown,
-  ): Promise<WorkerJob> {
+  async updateJobStatus(uuid: string, input: unknown): Promise<WorkerJob> {
     const parsed = updateJobStatusSchema.safeParse(input);
     if (!parsed.success) {
       const violations = zodIssuesToViolations(parsed.error.issues);
@@ -122,10 +119,7 @@ export class WorkerService {
     return updated;
   }
 
-  async listJobs(
-    workerId: string,
-    status?: JobStatus,
-  ): Promise<WorkerJob[]> {
+  async listJobs(workerId: string, status?: JobStatus): Promise<WorkerJob[]> {
     return this.workerJobRepository.findJobsByWorkerId(workerId, status);
   }
 
