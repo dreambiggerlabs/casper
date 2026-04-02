@@ -7,9 +7,9 @@ export default tseslint.config(
   ...tseslint.configs.stylistic,
   {
     rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
       ],
     },
   },

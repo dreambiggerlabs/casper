@@ -23,6 +23,12 @@ services:
     command: sh -c "npm install && npm run db:migrate && npm run dev"
     depends_on:
       - database
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   studio:
     image: node:22-alpine
@@ -35,6 +41,20 @@ services:
     command: sh -c "npm install && npm run dev"
     depends_on:
       - engine
+
+  worker:
+    image: node:22-alpine
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      ENGINE_URL: "http://engine:3000"
+      WORKER_NAME: "${WORKER_NAME:-}"
+    volumes:
+      - ./apps/worker:/app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      engine:
+        condition: service_healthy
 
 volumes:
   pgdata:

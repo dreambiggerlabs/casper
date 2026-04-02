@@ -1,7 +1,7 @@
 import { pgTable, serial, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-export const projects = pgTable("projects", {
+export const project = pgTable("project", {
   id: serial("id").primaryKey(),
   uuid: uuid("uuid").defaultRandom().notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),

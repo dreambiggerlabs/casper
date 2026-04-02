@@ -8,16 +8,29 @@ import {
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-import { projects } from "../project/project.schema.js";
+import { project } from "../project/project.schema.js";
+import { agent } from "../agent/agent.schema.js";
 
-export const tasks = pgTable(
-  "tasks",
+export const taskStatusSchema = z.enum([
+  "pending",
+  "assigned",
+  "processing",
+  "in_progress",
+  "completed",
+]);
+
+export type TaskStatus = z.infer<typeof taskStatusSchema>;
+
+export const task = pgTable(
+  "task",
   {
     id: serial("id").primaryKey(),
     uuid: uuid("uuid").defaultRandom().notNull().unique(),
     title: varchar("title", { length: 255 }).notNull(),
     projectId: uuid("project_id").notNull(),
     parentId: uuid("parent_id"),
+    status: varchar("status", { length: 50 }).notNull().default("pending"),
+    agentId: uuid("agent_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -28,11 +41,15 @@ export const tasks = pgTable(
   (table) => ({
     projectForeignKey: foreignKey({
       columns: [table.projectId],
-      foreignColumns: [projects.uuid],
+      foreignColumns: [project.uuid],
     }),
     parentForeignKey: foreignKey({
       columns: [table.parentId],
       foreignColumns: [table.uuid],
+    }),
+    agentForeignKey: foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agent.uuid],
     }),
   }),
 );
@@ -56,3 +73,11 @@ export const updateTaskSchema = z
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
   });
+
+export const assignTaskSchema = z.object({
+  agentId: z.string().uuid("Agent ID must be a valid UUID"),
+});
+
+export const updateTaskStatusSchema = z.object({
+  status: taskStatusSchema,
+});

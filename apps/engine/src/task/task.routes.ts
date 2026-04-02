@@ -10,8 +10,11 @@ export function createTaskRoutes(service: TaskService): Router {
     response.status(201).json(task);
   });
 
-  router.get("/tasks", async (_request, response) => {
-    const tasks = await service.listTasks();
+  router.get("/tasks", async (request, response) => {
+    const tasks = await service.listTasks({
+      status: request.query["status"]?.toString(),
+      agentId: request.query["agentId"]?.toString(),
+    });
     response.json(tasks);
   });
 
@@ -30,6 +33,18 @@ export function createTaskRoutes(service: TaskService): Router {
   router.patch("/tasks/:uuid", async (request, response) => {
     const uuid = request.params["uuid"] ?? "";
     const task = await service.updateTask(uuid, request.body);
+    response.json(task);
+  });
+
+  router.post("/tasks/:uuid/assign", async (request, response) => {
+    const uuid = request.params["uuid"] ?? "";
+    const task = await service.assignTask(uuid, request.body);
+    response.json(task);
+  });
+
+  router.patch("/tasks/:uuid/status", async (request, response) => {
+    const uuid = request.params["uuid"] ?? "";
+    const task = await service.updateTaskStatus(uuid, request.body);
     response.json(task);
   });
 

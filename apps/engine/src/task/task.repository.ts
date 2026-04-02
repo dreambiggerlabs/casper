@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 
-import { tasks } from "./task.schema.js";
+import { task } from "./task.schema.js";
+import type { TaskStatus } from "./task.schema.js";
 import type {
   CreateTask,
   Task,
@@ -10,12 +11,14 @@ import type {
   UpdateTask,
 } from "./task.types.js";
 
-function toTask(row: typeof tasks.$inferSelect): Task {
+function toTask(row: typeof task.$inferSelect): Task {
   return {
     uuid: row.uuid,
     title: row.title,
     projectId: row.projectId,
     parentId: row.parentId,
+    status: row.status as TaskStatus,
+    agentId: row.agentId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -27,8 +30,8 @@ export class DrizzleTaskRepository implements TaskRepository {
   async findByUuid(uuid: string): Promise<Task | undefined> {
     const rows = await this.database
       .select()
-      .from(tasks)
-      .where(eq(tasks.uuid, uuid));
+      .from(task)
+      .where(eq(task.uuid, uuid));
     const row = rows[0];
     return row ? toTask(row) : undefined;
   }
@@ -36,18 +39,29 @@ export class DrizzleTaskRepository implements TaskRepository {
   async findByProjectId(projectId: string): Promise<Task[]> {
     const rows = await this.database
       .select()
-      .from(tasks)
-      .where(eq(tasks.projectId, projectId));
+      .from(task)
+      .where(eq(task.projectId, projectId));
+    return rows.map(toTask);
+  }
+
+  async findByStatusAndAgentId(
+    status: TaskStatus,
+    agentId: string,
+  ): Promise<Task[]> {
+    const rows = await this.database
+      .select()
+      .from(task)
+      .where(and(eq(task.status, status), eq(task.agentId, agentId)));
     return rows.map(toTask);
   }
 
   async findAll(): Promise<Task[]> {
-    const rows = await this.database.select().from(tasks);
+    const rows = await this.database.select().from(task);
     return rows.map(toTask);
   }
 
   async create(data: CreateTask): Promise<Task> {
-    const rows = await this.database.insert(tasks).values(data).returning();
+    const rows = await this.database.insert(task).values(data).returning();
     const row = rows[0];
     if (!row) {
       throw new Error("Failed to create task");
@@ -57,9 +71,32 @@ export class DrizzleTaskRepository implements TaskRepository {
 
   async update(uuid: string, data: UpdateTask): Promise<Task | undefined> {
     const rows = await this.database
-      .update(tasks)
+      .update(task)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(tasks.uuid, uuid))
+      .where(eq(task.uuid, uuid))
+      .returning();
+    const row = rows[0];
+    return row ? toTask(row) : undefined;
+  }
+
+  async assign(uuid: string, agentId: string): Promise<Task | undefined> {
+    const rows = await this.database
+      .update(task)
+      .set({ agentId, status: "assigned", updatedAt: new Date() })
+      .where(eq(task.uuid, uuid))
+      .returning();
+    const row = rows[0];
+    return row ? toTask(row) : undefined;
+  }
+
+  async updateStatus(
+    uuid: string,
+    status: TaskStatus,
+  ): Promise<Task | undefined> {
+    const rows = await this.database
+      .update(task)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
     return row ? toTask(row) : undefined;
