@@ -14,9 +14,12 @@ Before making changes, read in this order:
 1. `README.md`
 2. `doc/CONVENTIONS.md`
 3. `doc/TECH.md`
-4. `ROADMAP.md`
+4. `doc/ARCHITECTURE.md`
+5. `ROADMAP.md`
 
 **`doc/CONVENTIONS.md` is mandatory.** Every rule in that file — naming, structure, simplicity, SOLID, database conventions — must be followed without exception. Do not deviate, improvise, or take shortcuts. If your code does not conform to `CONVENTIONS.md`, it is wrong.
+
+**Architecture Updates:** When anything changes the architecture, `doc/ARCHITECTURE.md` must be updated accordingly.
 
 ## 3. API-First Principle
 
@@ -127,3 +130,89 @@ npm test
 # Build
 npm run build
 ```
+
+## 8. Security Requirements
+
+Security is not optional. Every contributor — human or AI — must follow these rules without exception.
+
+### No Secrets in the Repository
+
+**Never commit credentials, API keys, tokens, passwords, private keys, or any other secret to the repository.** This includes:
+
+- API keys and access tokens (OpenAI, GitHub, Slack, etc.)
+- Database connection strings containing passwords
+- JWT signing keys or private PEM files
+- OAuth client secrets
+- Webhook secrets
+- Any form of password or passphrase
+
+**If a secret is committed, consider it compromised** — rotate it immediately, even if the commit is reverted or force-pushed.
+
+### Environment Variables for All Sensitive Configuration
+
+All secrets and sensitive configuration must be provided via **environment variables** at runtime.
+
+- Use `.env` files locally — these are gitignored (`.env`, `.env.*`)
+- Maintain `.env.example` with placeholder values and no real secrets
+- In production, inject secrets through the orchestration layer (Docker secrets, Vault, CI/CD variables)
+- Never hardcode fallback values for secrets in application code
+
+```typescript
+// ✗ Bad — hardcoded secret fallback
+const apiKey = process.env.OPENAI_API_KEY ?? 'sk-real-key-here';
+
+// ✗ Bad — secret in source code
+const jwtSecret = 'my-super-secret-key';
+
+// ✓ Good — fail if missing
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is required');
+```
+
+### Encrypted Storage for Sensitive Data
+
+Sensitive data stored in the database must be **encrypted at rest**. This applies to:
+
+- User credentials and authentication tokens
+- API keys stored on behalf of tenants
+- Personal identification information (PII)
+- Webhook secrets and signing keys
+- Any data that would cause harm if the database were breached
+
+Use application-level encryption (e.g. AES-256-GCM) for sensitive columns. Never store passwords in plain text — always use a strong hashing algorithm (e.g. bcrypt, argon2).
+
+```typescript
+// ✗ Bad — plain text password storage
+await database.insert(user).values({ password: plaintextPassword });
+
+// ✓ Good — hashed password
+const hashedPassword = await argon2.hash(plaintextPassword);
+await database.insert(user).values({ password: hashedPassword });
+```
+
+### Git-Level Protections
+
+The repository must enforce protections against accidental secret commits:
+
+- **`.gitignore`** must exclude `.env`, `.env.*`, `*.pem`, `*.key`, and other secret file patterns
+- **Pre-commit hooks** should include a secrets scanner (e.g. `detect-secrets`, `gitleaks`, or `trufflehog`) to block commits containing potential secrets
+- **CI pipeline** should run a secrets scan on every pull request
+
+### Dependency Security
+
+- Run `npm audit` before every commit (enforced by pre-commit hooks)
+- **No high or critical vulnerabilities** are allowed in production dependencies
+- Pin exact dependency versions in `package-lock.json`
+- Review new dependencies before adding them — prefer well-maintained, widely-used packages
+- Remove unused dependencies promptly
+
+### General Security Hygiene
+
+- **Validate and sanitise all input** — never trust data from external sources (API requests, webhooks, user input)
+- **Use parameterised queries** — never concatenate user input into SQL or shell commands
+- **Apply the principle of least privilege** — services and database users should have only the permissions they need
+- **Log securely** — never log secrets, tokens, passwords, or full request bodies containing sensitive data
+- **Use HTTPS everywhere** — all external communication must be encrypted in transit
+- **Set security headers** — `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, etc.
+- **Implement rate limiting** — protect endpoints from brute-force and abuse
+- **Token expiry** — JWTs and session tokens must have reasonable expiration times; support token revocation

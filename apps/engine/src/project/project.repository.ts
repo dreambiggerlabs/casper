@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 
-import { projects } from "./project.schema.js";
+import { project } from "./project.schema.js";
 import type {
   CreateProject,
   Project,
@@ -10,7 +10,7 @@ import type {
   UpdateProject,
 } from "./project.types.js";
 
-function toProject(row: typeof projects.$inferSelect): Project {
+function toProject(row: typeof project.$inferSelect): Project {
   return {
     uuid: row.uuid,
     title: row.title,
@@ -25,19 +25,19 @@ export class DrizzleProjectRepository implements ProjectRepository {
   async findByUuid(uuid: string): Promise<Project | undefined> {
     const rows = await this.db
       .select()
-      .from(projects)
-      .where(eq(projects.uuid, uuid));
+      .from(project)
+      .where(eq(project.uuid, uuid));
     const row = rows[0];
     return row ? toProject(row) : undefined;
   }
 
   async findAll(): Promise<Project[]> {
-    const rows = await this.db.select().from(projects);
+    const rows = await this.db.select().from(project);
     return rows.map(toProject);
   }
 
   async create(data: CreateProject): Promise<Project> {
-    const rows = await this.db.insert(projects).values(data).returning();
+    const rows = await this.db.insert(project).values(data).returning();
     const row = rows[0];
     if (!row) {
       throw new Error("Failed to create project");
@@ -50,9 +50,9 @@ export class DrizzleProjectRepository implements ProjectRepository {
     data: UpdateProject,
   ): Promise<Project | undefined> {
     const rows = await this.db
-      .update(projects)
+      .update(project)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(projects.uuid, uuid))
+      .where(eq(project.uuid, uuid))
       .returning();
     const row = rows[0];
     return row ? toProject(row) : undefined;

@@ -1,0 +1,158 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+import { EngineClient } from "../../src/engine-client.js";
+import type { JobProcessor } from "../../src/job-processor.js";
+import { PollingLoop } from "../../src/polling-loop.js";
+
+function createMockEngineClient(): EngineClient {
+  return {
+    registerWorker: vi.fn(),
+    heartbeat: vi.fn(),
+    fetchPendingJobs: vi.fn(),
+    getJob: vi.fn(),
+    updateJobStatus: vi.fn(),
+    getTask: vi.fn(),
+    updateTaskStatus: vi.fn(),
+  } as unknown as EngineClient;
+}
+
+function createMockJobProcessor(): JobProcessor {
+  return {
+    process: vi.fn(),
+  } as unknown as JobProcessor;
+}
+
+const WORKER_ID = "550e8400-e29b-41d4-a716-446655440004";
+
+describe("PollingLoop", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should fetch and process pending jobs on first poll", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    const jobs = [
+      {
+        uuid: "job-1",
+        workerId: WORKER_ID,
+        type: "execute_task" as const,
+        status: "pending" as const,
+        taskId: "task-1",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        uuid: "job-2",
+        workerId: WORKER_ID,
+        type: "cleanup" as const,
+        status: "pending" as const,
+        taskId: null,
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue(jobs);
+    vi.mocked(mockProcessor.process).mockResolvedValue();
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+
+    // Advance past the first poll
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledWith(WORKER_ID);
+    expect(mockProcessor.process).toHaveBeenCalledTimes(2);
+
+    pollingLoop.stop();
+  });
+
+  it("should continue polling after errors", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    vi.mocked(mockClient.fetchPendingJobs)
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce([]);
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+
+    // First poll (error)
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
+
+    // Second poll (success) after interval (5 seconds)
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(2);
+
+    pollingLoop.stop();
+  });
+
+  it("should stop when stop() is called", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([]);
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+
+    // First poll
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
+
+    pollingLoop.stop();
+
+    // Advance time - should not poll anymore
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
+  });
+
+  it("should send heartbeat on interval", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([]);
+    vi.mocked(mockClient.heartbeat).mockResolvedValue({} as never);
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+
+    // Initial heartbeat
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockClient.heartbeat).toHaveBeenCalledTimes(1);
+
+    // Next heartbeat after interval (30 seconds)
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(mockClient.heartbeat).toHaveBeenCalledTimes(2);
+
+    pollingLoop.stop();
+  });
+});

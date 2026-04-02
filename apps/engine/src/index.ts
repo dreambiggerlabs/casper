@@ -11,6 +11,14 @@ import { DrizzleProjectRepository } from "./project/project.repository.js";
 import { ProjectService } from "./project/project.service.js";
 import { createProjectRoutes } from "./project/project.routes.js";
 
+import { DrizzleAgentRepository } from "./agent/agent.repository.js";
+import { AgentService } from "./agent/agent.service.js";
+import { createAgentRoutes } from "./agent/agent.routes.js";
+
+import { DrizzleWorkerRepository, DrizzleWorkerJobRepository } from "./worker/worker.repository.js";
+import { WorkerService } from "./worker/worker.service.js";
+import { createWorkerRoutes } from "./worker/worker.routes.js";
+
 import { DrizzleTaskRepository } from "./task/task.repository.js";
 import { TaskService } from "./task/task.service.js";
 import { createTaskRoutes } from "./task/task.routes.js";
@@ -24,16 +32,29 @@ app.use(express.json());
 const projectRepository = new DrizzleProjectRepository(db);
 const projectService = new ProjectService(projectRepository);
 
+const agentRepository = new DrizzleAgentRepository(db);
+const agentService = new AgentService(agentRepository);
+
+const workerRepository = new DrizzleWorkerRepository(db);
+const workerJobRepository = new DrizzleWorkerJobRepository(db);
+const workerService = new WorkerService(workerRepository, workerJobRepository);
+
 const taskRepository = new DrizzleTaskRepository(db);
-const taskService = new TaskService(taskRepository, projectRepository);
+const taskService = new TaskService(
+  taskRepository,
+  projectRepository,
+  agentRepository,
+);
 
 // Routes
 app.use(createProjectRoutes(projectService));
+app.use(createAgentRoutes(agentService));
+app.use(createWorkerRoutes(workerService));
 app.use(createTaskRoutes(taskService));
 
 // OpenAPI
-app.get("/openapi.json", (_req, res) => {
-  res.json(openApiSpec);
+app.get("/openapi.json", (_request, response) => {
+  response.json(openApiSpec);
 });
 app.use(
   "/docs",
@@ -43,8 +64,8 @@ app.use(
 );
 
 // Health
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+app.get("/health", (_request, response) => {
+  response.json({ status: "ok" });
 });
 
 // Error handling

@@ -15,6 +15,34 @@
       "when": 1775048123606,
       "tag": "0001_cooing_psylocke",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775052000000,
+      "tag": "0002_rename_tables_to_singular",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775054000000,
+      "tag": "0003_add_agent_and_task_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775056000000,
+      "tag": "0004_add_worker_domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775060000000,
+      "tag": "0005_add_token_and_jobs",
+      "breakpoints": true
     }
   ]
 }

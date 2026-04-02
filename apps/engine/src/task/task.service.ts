@@ -4,15 +4,23 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
+import type { AgentReader } from "../agent/agent.types.js";
 import type { ProjectReader } from "../project/project.types.js";
 
-import { createTaskSchema, updateTaskSchema } from "./task.schema.js";
+import {
+  createTaskSchema,
+  updateTaskSchema,
+  assignTaskSchema,
+  updateTaskStatusSchema,
+  taskStatusSchema,
+} from "./task.schema.js";
 import type { Task, TaskRepository } from "./task.types.js";
 
 export class TaskService {
   constructor(
     private readonly taskRepository: TaskRepository,
     private readonly projectReader: ProjectReader,
+    private readonly agentReader: AgentReader,
   ) {}
 
   async createTask(input: unknown): Promise<Task> {
@@ -47,7 +55,21 @@ export class TaskService {
     return task;
   }
 
-  async listTasks(): Promise<Task[]> {
+  async listTasks(filters?: {
+    status?: string;
+    agentId?: string;
+  }): Promise<Task[]> {
+    if (filters?.status && filters?.agentId) {
+      const parsedStatus = taskStatusSchema.safeParse(filters.status);
+      if (!parsedStatus.success) {
+        const violations = zodIssuesToViolations(parsedStatus.error.issues);
+        throw new ValidationError("Invalid status", violations);
+      }
+      return this.taskRepository.findByStatusAndAgentId(
+        parsedStatus.data,
+        filters.agentId,
+      );
+    }
     return this.taskRepository.findAll();
   }
 
@@ -85,6 +107,61 @@ export class TaskService {
     }
 
     const updated = await this.taskRepository.update(uuid, parsed.data);
+    if (!updated) {
+      throw new NotFoundError("Task", uuid);
+    }
+    return updated;
+  }
+
+  async assignTask(taskUuid: string, input: unknown): Promise<Task> {
+    const parsed = assignTaskSchema.safeParse(input);
+    if (!parsed.success) {
+      const violations = zodIssuesToViolations(parsed.error.issues);
+      throw new ValidationError("Validation failed", violations);
+    }
+
+    const task = await this.taskRepository.findByUuid(taskUuid);
+    if (!task) {
+      throw new NotFoundError("Task", taskUuid);
+    }
+
+    if (task.status !== "pending") {
+      throw new ValidationError("Task is not in pending status", [
+        { field: "status", message: "Only pending tasks can be assigned" },
+      ]);
+    }
+
+    const agent = await this.agentReader.findByUuid(parsed.data.agentId);
+    if (!agent) {
+      throw new NotFoundError("Agent", parsed.data.agentId);
+    }
+
+    const updated = await this.taskRepository.assign(
+      taskUuid,
+      parsed.data.agentId,
+    );
+    if (!updated) {
+      throw new NotFoundError("Task", taskUuid);
+    }
+    return updated;
+  }
+
+  async updateTaskStatus(uuid: string, input: unknown): Promise<Task> {
+    const parsed = updateTaskStatusSchema.safeParse(input);
+    if (!parsed.success) {
+      const violations = zodIssuesToViolations(parsed.error.issues);
+      throw new ValidationError("Validation failed", violations);
+    }
+
+    const task = await this.taskRepository.findByUuid(uuid);
+    if (!task) {
+      throw new NotFoundError("Task", uuid);
+    }
+
+    const updated = await this.taskRepository.updateStatus(
+      uuid,
+      parsed.data.status,
+    );
     if (!updated) {
       throw new NotFoundError("Task", uuid);
     }
