@@ -9,8 +9,9 @@ export interface Project {
   "@id": string;
   uuid: string;
   title: string;
+  description: string | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
 
 export type CreateProject = z.infer<typeof createProjectSchema>;

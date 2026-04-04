@@ -16,6 +16,7 @@ function toProject(row: typeof project.$inferSelect): Project {
     "@id": toIri("projects", row.uuid),
     uuid: row.uuid,
     title: row.title,
+    description: row.description,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

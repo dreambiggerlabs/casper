@@ -22,7 +22,7 @@ export interface Worker {
   status: WorkerStatus;
   lastHeartbeatAt: Date | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
 
 export interface WorkerJob {
@@ -33,7 +33,7 @@ export interface WorkerJob {
   status: JobStatus;
   task: string | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
 
 export type CreateWorker = z.infer<typeof createWorkerSchema>;

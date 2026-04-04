@@ -1,0 +1,14 @@
+ALTER TABLE "project" ALTER COLUMN "updated_at" DROP DEFAULT;
+ALTER TABLE "project" ALTER COLUMN "updated_at" DROP NOT NULL;
+
+ALTER TABLE "agent" ALTER COLUMN "updated_at" DROP DEFAULT;
+ALTER TABLE "agent" ALTER COLUMN "updated_at" DROP NOT NULL;
+
+ALTER TABLE "task" ALTER COLUMN "updated_at" DROP DEFAULT;
+ALTER TABLE "task" ALTER COLUMN "updated_at" DROP NOT NULL;
+
+ALTER TABLE "worker" ALTER COLUMN "updated_at" DROP DEFAULT;
+ALTER TABLE "worker" ALTER COLUMN "updated_at" DROP NOT NULL;
+
+ALTER TABLE "worker_job" ALTER COLUMN "updated_at" DROP DEFAULT;
+ALTER TABLE "worker_job" ALTER COLUMN "updated_at" DROP NOT NULL;

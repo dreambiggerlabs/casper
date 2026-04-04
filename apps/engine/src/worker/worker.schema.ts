@@ -43,9 +43,7 @@ export const worker = pgTable("worker", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
 export const workerJob = pgTable(
@@ -60,9 +58,7 @@ export const workerJob = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => ({
     workerForeignKey: foreignKey({
