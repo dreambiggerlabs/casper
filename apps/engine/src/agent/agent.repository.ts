@@ -25,11 +25,13 @@ export class DrizzleAgentRepository implements AgentRepository {
       .from(agent)
       .where(eq(agent.uuid, uuid));
     const row = rows[0];
+
     return row ? toAgent(row) : undefined;
   }
 
   async findAll(): Promise<Agent[]> {
     const rows = await this.database.select().from(agent);
+
     return rows.map(toAgent);
   }
 
@@ -37,6 +39,7 @@ export class DrizzleAgentRepository implements AgentRepository {
     const rows = await this.database
       .select({ count: drizzleCount() })
       .from(agent);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -49,6 +52,7 @@ export class DrizzleAgentRepository implements AgentRepository {
       .from(agent)
       .limit(params.limit)
       .offset(params.offset);
+
     return rows.map(toAgent);
   }
 
@@ -58,6 +62,7 @@ export class DrizzleAgentRepository implements AgentRepository {
     if (!row) {
       throw new Error("Failed to create agent");
     }
+
     return toAgent(row);
   }
 }

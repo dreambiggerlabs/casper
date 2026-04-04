@@ -21,11 +21,13 @@ function buildUrl(
     }
   }
   params.set("page", String(page));
+
   return `${basePath}?${params.toString()}`;
 }
 
 function deriveContextName(basePath: string): string {
   const segment = basePath.split("/").filter(Boolean).pop() ?? "";
+
   return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 

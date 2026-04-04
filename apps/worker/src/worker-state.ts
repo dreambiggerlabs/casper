@@ -27,6 +27,7 @@ export async function loadWorkerState(): Promise<WorkerState | null> {
   try {
     const statePath = getWorkerStatePath();
     const data = await readFile(statePath, "utf-8");
+
     return JSON.parse(data) as WorkerState;
   } catch (error) {
     // File doesn't exist or is invalid

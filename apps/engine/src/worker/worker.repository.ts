@@ -48,6 +48,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
       .from(worker)
       .where(eq(worker.uuid, uuid));
     const row = rows[0];
+
     return row ? toWorker(row) : undefined;
   }
 
@@ -57,11 +58,13 @@ export class DrizzleWorkerRepository implements WorkerRepository {
       .from(worker)
       .where(eq(worker.token, token));
     const row = rows[0];
+
     return row ? toWorker(row) : undefined;
   }
 
   async findAll(): Promise<Worker[]> {
     const rows = await this.database.select().from(worker);
+
     return rows.map(toWorker);
   }
 
@@ -70,6 +73,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
       .select()
       .from(worker)
       .where(eq(worker.status, "active"));
+
     return rows.map(toWorker);
   }
 
@@ -79,6 +83,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
     if (!row) {
       throw new Error("Failed to create worker");
     }
+
     return toWorker(row);
   }
 
@@ -86,6 +91,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
     const rows = await this.database
       .select({ count: drizzleCount() })
       .from(worker);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -98,6 +104,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
       .from(worker)
       .limit(params.limit)
       .offset(params.offset);
+
     return rows.map(toWorker);
   }
 
@@ -115,6 +122,7 @@ export class DrizzleWorkerRepository implements WorkerRepository {
       .where(eq(worker.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toWorker(row) : undefined;
   }
 }
@@ -128,6 +136,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .from(workerJob)
       .where(eq(workerJob.uuid, uuid));
     const row = rows[0];
+
     return row ? toWorkerJob(row) : undefined;
   }
 
@@ -139,6 +148,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       ? and(eq(workerJob.workerId, workerId), eq(workerJob.status, status))
       : eq(workerJob.workerId, workerId);
     const rows = await this.database.select().from(workerJob).where(query);
+
     return rows.map(toWorkerJob);
   }
 
@@ -148,6 +158,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .from(workerJob)
       .where(eq(workerJob.taskId, taskId));
     const row = rows[0];
+
     return row ? toWorkerJob(row) : undefined;
   }
 
@@ -159,6 +170,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .select({ count: drizzleCount() })
       .from(workerJob)
       .where(where);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -180,6 +192,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .where(where)
       .limit(params.limit)
       .offset(params.offset);
+
     return rows.map(toWorkerJob);
   }
 
@@ -195,6 +208,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     if (!row) {
       throw new Error("Failed to create job");
     }
+
     return toWorkerJob(row);
   }
 
@@ -208,6 +222,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .where(eq(workerJob.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toWorkerJob(row) : undefined;
   }
 }

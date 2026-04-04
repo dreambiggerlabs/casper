@@ -7,7 +7,8 @@ import { PollingLoop } from "./polling-loop.js";
 import { loadWorkerState, saveWorkerState } from "./worker-state.js";
 
 const ENGINE_URL = process.env["ENGINE_URL"];
-const WORKER_NAME = process.env["WORKER_NAME"]?.trim() || hostname() || `worker-${Date.now()}`;
+const WORKER_NAME =
+  process.env["WORKER_NAME"]?.trim() || hostname() || `worker-${Date.now()}`;
 
 if (!ENGINE_URL) {
   throw new Error("ENGINE_URL environment variable is required");

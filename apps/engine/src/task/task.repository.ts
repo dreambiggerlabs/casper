@@ -35,6 +35,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .from(task)
       .where(eq(task.uuid, uuid));
     const row = rows[0];
+
     return row ? toTask(row) : undefined;
   }
 
@@ -43,6 +44,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .select()
       .from(task)
       .where(eq(task.projectId, projectId));
+
     return rows.map(toTask);
   }
 
@@ -54,11 +56,13 @@ export class DrizzleTaskRepository implements TaskRepository {
       .select()
       .from(task)
       .where(and(eq(task.status, status), eq(task.agentId, agentId)));
+
     return rows.map(toTask);
   }
 
   async findAll(): Promise<Task[]> {
     const rows = await this.database.select().from(task);
+
     return rows.map(toTask);
   }
 
@@ -74,6 +78,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       conditions.push(eq(task.projectId, filters.projectId));
     if (conditions.length === 0) return undefined;
     if (conditions.length === 1) return conditions[0];
+
     return and(...conditions);
   }
 
@@ -85,6 +90,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     const where = this.buildFilters(filters);
     const query = this.database.select({ count: drizzleCount() }).from(task);
     const rows = where ? await query.where(where) : await query;
+
     return rows[0]?.count ?? 0;
   }
 
@@ -99,6 +105,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     const query = this.database.select().from(task);
     const filtered = where ? query.where(where) : query;
     const rows = await filtered.limit(params.limit).offset(params.offset);
+
     return rows.map(toTask);
   }
 
@@ -108,6 +115,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     if (!row) {
       throw new Error("Failed to create task");
     }
+
     return toTask(row);
   }
 
@@ -118,6 +126,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toTask(row) : undefined;
   }
 
@@ -128,6 +137,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toTask(row) : undefined;
   }
 
@@ -141,6 +151,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toTask(row) : undefined;
   }
 }

@@ -25,17 +25,20 @@ export function parseIri(iri: string, resource: ResourceType): string {
   if (!z.string().uuid().safeParse(uuid).success) {
     throw new Error(`Invalid IRI: UUID segment is not a valid UUID in ${iri}`);
   }
+
   return uuid;
 }
 
 export function iriSchema(resource: ResourceType) {
   const prefix = RESOURCE_PATHS[resource];
+
   return z
     .string()
     .refine(
       (val) => {
         if (!val.startsWith(`${prefix}/`)) return false;
         const uuid = val.slice(prefix.length + 1);
+
         return z.string().uuid().safeParse(uuid).success;
       },
       { message: `Must be a valid IRI in the format ${prefix}/{uuid}` },

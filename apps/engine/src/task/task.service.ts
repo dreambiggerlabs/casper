@@ -56,6 +56,7 @@ export class TaskService {
     if (!task) {
       throw new NotFoundError("Task", uuid);
     }
+
     return task;
   }
 
@@ -145,6 +146,7 @@ export class TaskService {
     if (!updated) {
       throw new NotFoundError("Task", uuid);
     }
+
     return updated;
   }
 
@@ -178,6 +180,7 @@ export class TaskService {
     if (!updated) {
       throw new NotFoundError("Task", taskUuid);
     }
+
     return updated;
   }
 
@@ -200,6 +203,7 @@ export class TaskService {
     if (!updated) {
       throw new NotFoundError("Task", uuid);
     }
+
     return updated;
   }
 }

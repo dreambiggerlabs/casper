@@ -57,6 +57,7 @@ export class WorkerService {
     if (!updated) {
       throw new NotFoundError("Worker", uuid);
     }
+
     return updated;
   }
 
@@ -65,6 +66,7 @@ export class WorkerService {
     if (!worker) {
       throw new NotFoundError("Worker", uuid);
     }
+
     return worker;
   }
 
@@ -73,6 +75,7 @@ export class WorkerService {
     if (!worker) {
       throw new NotFoundError("Worker", "invalid token");
     }
+
     return worker;
   }
 
@@ -87,6 +90,7 @@ export class WorkerService {
       }),
       this.workerRepository.count(),
     ]);
+
     return { items, totalItems };
   }
 
@@ -134,6 +138,7 @@ export class WorkerService {
     if (!updated) {
       throw new NotFoundError("Job", uuid);
     }
+
     return updated;
   }
 
@@ -152,6 +157,7 @@ export class WorkerService {
       }),
       this.workerJobRepository.countJobs(workerId, status),
     ]);
+
     return { items, totalItems };
   }
 
@@ -160,6 +166,7 @@ export class WorkerService {
     if (!job) {
       throw new NotFoundError("Job", uuid);
     }
+
     return job;
   }
 }

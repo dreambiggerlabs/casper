@@ -11,6 +11,10 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_" },
       ],
+      "padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "*", next: "return" },
+      ],
     },
   },
 );

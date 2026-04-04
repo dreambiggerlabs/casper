@@ -21,6 +21,7 @@ export class ProjectService {
       const violations = zodIssuesToViolations(parsed.error.issues);
       throw new ValidationError("Validation failed", violations);
     }
+
     return this.repository.create(parsed.data);
   }
 
@@ -29,6 +30,7 @@ export class ProjectService {
     if (!project) {
       throw new NotFoundError("Project", uuid);
     }
+
     return project;
   }
 
@@ -43,6 +45,7 @@ export class ProjectService {
       }),
       this.repository.count(),
     ]);
+
     return { items, totalItems };
   }
 
@@ -57,6 +60,7 @@ export class ProjectService {
     if (!updated) {
       throw new NotFoundError("Project", uuid);
     }
+
     return updated;
   }
 }

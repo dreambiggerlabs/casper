@@ -61,6 +61,7 @@ export function createWorkerRoutes(service: WorkerService): Router {
       response
         .status(400)
         .json({ error: "worker query parameter is required" });
+
       return;
     }
 

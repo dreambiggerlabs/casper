@@ -30,16 +30,19 @@ export class DrizzleProjectRepository implements ProjectRepository {
       .from(project)
       .where(eq(project.uuid, uuid));
     const row = rows[0];
+
     return row ? toProject(row) : undefined;
   }
 
   async findAll(): Promise<Project[]> {
     const rows = await this.db.select().from(project);
+
     return rows.map(toProject);
   }
 
   async count(): Promise<number> {
     const rows = await this.db.select({ count: drizzleCount() }).from(project);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -52,6 +55,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       .from(project)
       .limit(params.limit)
       .offset(params.offset);
+
     return rows.map(toProject);
   }
 
@@ -61,6 +65,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
     if (!row) {
       throw new Error("Failed to create project");
     }
+
     return toProject(row);
   }
 
@@ -74,6 +79,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
       .where(eq(project.uuid, uuid))
       .returning();
     const row = rows[0];
+
     return row ? toProject(row) : undefined;
   }
 }

@@ -30,6 +30,7 @@ export class AgentService {
     if (!agent) {
       throw new NotFoundError("Agent", uuid);
     }
+
     return agent;
   }
 
@@ -44,6 +45,7 @@ export class AgentService {
       }),
       this.agentRepository.count(),
     ]);
+
     return { items, totalItems };
   }
 }

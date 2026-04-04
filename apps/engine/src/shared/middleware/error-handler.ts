@@ -13,11 +13,13 @@ export const errorHandler: ErrorRequestHandler = (
       error: err.message,
       violations: err.violations,
     });
+
     return;
   }
 
   if (err instanceof HttpError) {
     response.status(err.statusCode).json({ error: err.message });
+
     return;
   }
 

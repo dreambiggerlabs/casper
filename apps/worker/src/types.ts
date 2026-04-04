@@ -1,6 +1,15 @@
-export type TaskStatus = "pending" | "assigned" | "processing" | "in_progress" | "completed";
+export type TaskStatus =
+  | "pending"
+  | "assigned"
+  | "processing"
+  | "in_progress"
+  | "completed";
 export type WorkerStatus = "active" | "inactive";
-export type JobType = "execute_task" | "cleanup" | "start_preview" | "stop_preview";
+export type JobType =
+  | "execute_task"
+  | "cleanup"
+  | "start_preview"
+  | "stop_preview";
 export type JobStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export interface Task {

@@ -15,6 +15,7 @@ export class EngineClient {
         `Failed to register worker: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<Worker>;
   }
 
@@ -32,19 +33,22 @@ export class EngineClient {
         `Failed to send heartbeat: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<Worker>;
   }
 
   async fetchPendingJobs(workerId: string): Promise<WorkerJob[]> {
     const response = await fetch(
-      `${this.engineUrl}/jobs?workerId=${workerId}&status=pending`,
+      `${this.engineUrl}/jobs?worker=/workers/${workerId}&status=pending`,
     );
     if (!response.ok) {
       throw new Error(
         `Failed to fetch jobs: ${response.status} ${response.statusText}`,
       );
     }
-    return response.json() as Promise<WorkerJob[]>;
+    const collection = (await response.json()) as { member: WorkerJob[] };
+
+    return collection.member ?? [];
   }
 
   async getJob(jobUuid: string): Promise<WorkerJob> {
@@ -54,10 +58,14 @@ export class EngineClient {
         `Failed to get job: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<WorkerJob>;
   }
 
-  async updateJobStatus(jobUuid: string, status: WorkerJob["status"]): Promise<WorkerJob> {
+  async updateJobStatus(
+    jobUuid: string,
+    status: WorkerJob["status"],
+  ): Promise<WorkerJob> {
     const response = await fetch(`${this.engineUrl}/jobs/${jobUuid}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -68,6 +76,7 @@ export class EngineClient {
         `Failed to update job status: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<WorkerJob>;
   }
 
@@ -78,6 +87,7 @@ export class EngineClient {
         `Failed to get task: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<Task>;
   }
 
@@ -95,6 +105,7 @@ export class EngineClient {
         `Failed to update task status: ${response.status} ${response.statusText}`,
       );
     }
+
     return response.json() as Promise<Task>;
   }
 }
