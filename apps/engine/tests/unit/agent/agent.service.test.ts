@@ -9,6 +9,8 @@ function createMockAgentRepository(): AgentRepository {
   return {
     findByUuid: vi.fn(),
     findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
     create: vi.fn(),
   };
 }
@@ -80,15 +82,20 @@ describe("AgentService", () => {
   });
 
   describe("listAgents", () => {
-    it("should return all agents", async () => {
+    it("should return paginated agents", async () => {
       const agentRepository = createMockAgentRepository();
-      const expected = [makeAgent(), makeAgent({ uuid: "other-uuid" })];
-      vi.mocked(agentRepository.findAll).mockResolvedValue(expected);
+      const agents = [makeAgent(), makeAgent({ uuid: "other-uuid" })];
+      vi.mocked(agentRepository.findPaginated).mockResolvedValue(agents);
+      vi.mocked(agentRepository.count).mockResolvedValue(2);
 
       const service = new AgentService(agentRepository);
-      const result = await service.listAgents();
+      const result = await service.listAgents({ page: 1, itemsPerPage: 30 });
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ items: agents, totalItems: 2 });
+      expect(agentRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
+      });
     });
   });
 });

@@ -4,6 +4,8 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
+import type { PaginatedResult, PaginationParams } from "../shared/pagination/index.js";
+
 import { createAgentSchema } from "./agent.schema.js";
 import type { Agent, AgentRepository } from "./agent.types.js";
 
@@ -28,7 +30,17 @@ export class AgentService {
     return agent;
   }
 
-  async listAgents(): Promise<Agent[]> {
-    return this.agentRepository.findAll();
+  async listAgents(
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<Agent>> {
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    const [items, totalItems] = await Promise.all([
+      this.agentRepository.findPaginated({
+        limit: pagination.itemsPerPage,
+        offset,
+      }),
+      this.agentRepository.count(),
+    ]);
+    return { items, totalItems };
   }
 }

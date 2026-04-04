@@ -1,5 +1,10 @@
 import { Router } from "express";
 
+import {
+  createHydraCollection,
+  parsePaginationParams,
+} from "../shared/pagination/index.js";
+
 import type { AgentService } from "./agent.service.js";
 
 export function createAgentRoutes(service: AgentService): Router {
@@ -10,9 +15,17 @@ export function createAgentRoutes(service: AgentService): Router {
     response.status(201).json(agent);
   });
 
-  router.get("/agents", async (_request, response) => {
-    const agents = await service.listAgents();
-    response.json(agents);
+  router.get("/agents", async (request, response) => {
+    const pagination = parsePaginationParams(
+      request.query as Record<string, unknown>,
+    );
+    const result = await service.listAgents(pagination);
+    const collection = createHydraCollection({
+      ...result,
+      ...pagination,
+      basePath: "/agents",
+    });
+    response.json(collection);
   });
 
   router.get("/agents/:uuid", async (request, response) => {

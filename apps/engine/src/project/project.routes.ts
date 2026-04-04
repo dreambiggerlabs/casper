@@ -1,5 +1,10 @@
 import { Router } from "express";
 
+import {
+  createHydraCollection,
+  parsePaginationParams,
+} from "../shared/pagination/index.js";
+
 import type { ProjectService } from "./project.service.js";
 
 export function createProjectRoutes(service: ProjectService): Router {
@@ -10,9 +15,17 @@ export function createProjectRoutes(service: ProjectService): Router {
     res.status(201).json(project);
   });
 
-  router.get("/projects", async (_req, res) => {
-    const projects = await service.listProjects();
-    res.json(projects);
+  router.get("/projects", async (req, res) => {
+    const pagination = parsePaginationParams(
+      req.query as Record<string, unknown>,
+    );
+    const result = await service.listProjects(pagination);
+    const collection = createHydraCollection({
+      ...result,
+      ...pagination,
+      basePath: "/projects",
+    });
+    res.json(collection);
   });
 
   router.get("/projects/:uuid", async (req, res) => {

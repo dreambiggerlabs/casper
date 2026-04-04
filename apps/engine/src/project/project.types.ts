@@ -19,6 +19,8 @@ export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export interface ProjectReader {
   findByUuid(uuid: string): Promise<Project | undefined>;
   findAll(): Promise<Project[]>;
+  count(): Promise<number>;
+  findPaginated(params: { limit: number; offset: number }): Promise<Project[]>;
 }
 
 export interface ProjectWriter {

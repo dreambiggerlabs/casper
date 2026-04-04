@@ -9,6 +9,8 @@ function createMockRepository(): ProjectRepository {
   return {
     findByUuid: vi.fn(),
     findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
   };
@@ -80,25 +82,43 @@ describe("ProjectService", () => {
   });
 
   describe("listProjects", () => {
-    it("should return all projects", async () => {
+    it("should return paginated projects", async () => {
       const repo = createMockRepository();
-      const expected = [makeProject(), makeProject({ uuid: "other-uuid" })];
-      vi.mocked(repo.findAll).mockResolvedValue(expected);
+      const projects = [makeProject(), makeProject({ uuid: "other-uuid" })];
+      vi.mocked(repo.findPaginated).mockResolvedValue(projects);
+      vi.mocked(repo.count).mockResolvedValue(2);
 
       const service = new ProjectService(repo);
-      const result = await service.listProjects();
+      const result = await service.listProjects({ page: 1, itemsPerPage: 30 });
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ items: projects, totalItems: 2 });
+      expect(repo.findPaginated).toHaveBeenCalledWith({ limit: 30, offset: 0 });
+      expect(repo.count).toHaveBeenCalled();
     });
 
-    it("should return empty array when no projects exist", async () => {
+    it("should return empty result when no projects exist", async () => {
       const repo = createMockRepository();
-      vi.mocked(repo.findAll).mockResolvedValue([]);
+      vi.mocked(repo.findPaginated).mockResolvedValue([]);
+      vi.mocked(repo.count).mockResolvedValue(0);
 
       const service = new ProjectService(repo);
-      const result = await service.listProjects();
+      const result = await service.listProjects({ page: 1, itemsPerPage: 30 });
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({ items: [], totalItems: 0 });
+    });
+
+    it("should compute correct offset for page 2", async () => {
+      const repo = createMockRepository();
+      vi.mocked(repo.findPaginated).mockResolvedValue([]);
+      vi.mocked(repo.count).mockResolvedValue(50);
+
+      const service = new ProjectService(repo);
+      await service.listProjects({ page: 2, itemsPerPage: 10 });
+
+      expect(repo.findPaginated).toHaveBeenCalledWith({
+        limit: 10,
+        offset: 10,
+      });
     });
   });
 

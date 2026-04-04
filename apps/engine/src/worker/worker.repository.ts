@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, count as drizzleCount } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
@@ -82,6 +82,25 @@ export class DrizzleWorkerRepository implements WorkerRepository {
     return toWorker(row);
   }
 
+  async count(): Promise<number> {
+    const rows = await this.database
+      .select({ count: drizzleCount() })
+      .from(worker);
+    return rows[0]?.count ?? 0;
+  }
+
+  async findPaginated(params: {
+    limit: number;
+    offset: number;
+  }): Promise<Worker[]> {
+    const rows = await this.database
+      .select()
+      .from(worker)
+      .limit(params.limit)
+      .offset(params.offset);
+    return rows.map(toWorker);
+  }
+
   async updateHeartbeat(
     uuid: string,
     status?: WorkerStatus,
@@ -130,6 +149,38 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .where(eq(workerJob.taskId, taskId));
     const row = rows[0];
     return row ? toWorkerJob(row) : undefined;
+  }
+
+  async countJobs(workerId: string, status?: JobStatus): Promise<number> {
+    const where = status
+      ? and(eq(workerJob.workerId, workerId), eq(workerJob.status, status))
+      : eq(workerJob.workerId, workerId);
+    const rows = await this.database
+      .select({ count: drizzleCount() })
+      .from(workerJob)
+      .where(where);
+    return rows[0]?.count ?? 0;
+  }
+
+  async findJobsPaginated(params: {
+    workerId: string;
+    status?: JobStatus;
+    limit: number;
+    offset: number;
+  }): Promise<WorkerJob[]> {
+    const where = params.status
+      ? and(
+          eq(workerJob.workerId, params.workerId),
+          eq(workerJob.status, params.status),
+        )
+      : eq(workerJob.workerId, params.workerId);
+    const rows = await this.database
+      .select()
+      .from(workerJob)
+      .where(where)
+      .limit(params.limit)
+      .offset(params.offset);
+    return rows.map(toWorkerJob);
   }
 
   async createJob(

@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, count as drizzleCount, type SQL } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
@@ -59,6 +59,48 @@ export class DrizzleTaskRepository implements TaskRepository {
 
   async findAll(): Promise<Task[]> {
     const rows = await this.database.select().from(task);
+    return rows.map(toTask);
+  }
+
+  private buildFilters(filters?: {
+    status?: TaskStatus;
+    agentId?: string;
+    projectId?: string;
+  }): SQL | undefined {
+    const conditions: SQL[] = [];
+    if (filters?.status) conditions.push(eq(task.status, filters.status));
+    if (filters?.agentId) conditions.push(eq(task.agentId, filters.agentId));
+    if (filters?.projectId)
+      conditions.push(eq(task.projectId, filters.projectId));
+    if (conditions.length === 0) return undefined;
+    if (conditions.length === 1) return conditions[0];
+    return and(...conditions);
+  }
+
+  async count(filters?: {
+    status?: TaskStatus;
+    agentId?: string;
+    projectId?: string;
+  }): Promise<number> {
+    const where = this.buildFilters(filters);
+    const query = this.database
+      .select({ count: drizzleCount() })
+      .from(task);
+    const rows = where ? await query.where(where) : await query;
+    return rows[0]?.count ?? 0;
+  }
+
+  async findPaginated(params: {
+    limit: number;
+    offset: number;
+    status?: TaskStatus;
+    agentId?: string;
+    projectId?: string;
+  }): Promise<Task[]> {
+    const where = this.buildFilters(params);
+    const query = this.database.select().from(task);
+    const filtered = where ? query.where(where) : query;
+    const rows = await filtered.limit(params.limit).offset(params.offset);
     return rows.map(toTask);
   }
 

@@ -44,15 +44,16 @@ export const openApiSpec = {
         tags: ["Projects"],
         summary: "List all projects",
         operationId: "listProjects",
+        parameters: [
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
+        ],
         responses: {
           "200": {
-            description: "List of projects",
+            description: "Paginated collection of projects",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Project" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -175,15 +176,16 @@ export const openApiSpec = {
         tags: ["Agents"],
         summary: "List all agents",
         operationId: "listAgents",
+        parameters: [
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
+        ],
         responses: {
           "200": {
-            description: "List of agents",
+            description: "Paginated collection of agents",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Agent" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -259,15 +261,16 @@ export const openApiSpec = {
         tags: ["Workers"],
         summary: "List all workers",
         operationId: "listWorkers",
+        parameters: [
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
+        ],
         responses: {
           "200": {
-            description: "List of workers",
+            description: "Paginated collection of workers",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Worker" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -405,16 +408,15 @@ export const openApiSpec = {
               enum: ["pending", "in_progress", "completed", "failed"],
             },
           },
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
         ],
         responses: {
           "200": {
-            description: "List of jobs",
+            description: "Paginated collection of jobs",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/WorkerJob" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -582,16 +584,15 @@ export const openApiSpec = {
               description: "Agent IRI in the format /agents/{uuid}",
             },
           },
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
         ],
         responses: {
           "200": {
-            description: "List of tasks",
+            description: "Paginated collection of tasks",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Task" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -788,16 +789,15 @@ export const openApiSpec = {
             required: true,
             schema: { type: "string", format: "uuid" },
           },
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
         ],
         responses: {
           "200": {
-            description: "List of tasks for the project",
+            description: "Paginated collection of tasks for the project",
             content: {
               "application/json": {
-                schema: {
-                  type: "array",
-                  items: { $ref: "#/components/schemas/Task" },
-                },
+                schema: { $ref: "#/components/schemas/HydraCollection" },
               },
             },
           },
@@ -814,7 +814,53 @@ export const openApiSpec = {
     },
   },
   components: {
+    parameters: {
+      page: {
+        name: "page",
+        in: "query",
+        required: false,
+        description: "Page number (1-indexed, defaults to 1)",
+        schema: { type: "integer", minimum: 1, default: 1 },
+      },
+      itemsPerPage: {
+        name: "itemsPerPage",
+        in: "query",
+        required: false,
+        description: "Number of items per page (defaults to 30, max 100)",
+        schema: { type: "integer", minimum: 1, maximum: 100, default: 30 },
+      },
+    },
     schemas: {
+      HydraCollection: {
+        type: "object",
+        required: ["@context", "@id", "@type", "totalItems", "member"],
+        description: "A Hydra Collection with optional pagination view",
+        properties: {
+          "@context": { type: "string" },
+          "@id": { type: "string" },
+          "@type": { type: "string", enum: ["Collection"] },
+          totalItems: { type: "integer", minimum: 0 },
+          member: { type: "array", items: {} },
+          view: { $ref: "#/components/schemas/PartialCollectionView" },
+        },
+      },
+      PartialCollectionView: {
+        type: "object",
+        required: ["@id", "@type", "first", "last"],
+        description:
+          "Pagination view with navigation links for a Hydra Collection",
+        properties: {
+          "@id": { type: "string" },
+          "@type": {
+            type: "string",
+            enum: ["PartialCollectionView"],
+          },
+          first: { type: "string" },
+          last: { type: "string" },
+          next: { type: "string" },
+          previous: { type: "string" },
+        },
+      },
       Project: {
         type: "object",
         required: ["@id", "uuid", "title", "createdAt", "updatedAt"],

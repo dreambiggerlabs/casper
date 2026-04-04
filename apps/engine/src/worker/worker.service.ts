@@ -6,6 +6,8 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
+import type { PaginatedResult, PaginationParams } from "../shared/pagination/index.js";
+
 import {
   createWorkerSchema,
   createJobSchema,
@@ -71,8 +73,18 @@ export class WorkerService {
     return worker;
   }
 
-  async listWorkers(): Promise<Worker[]> {
-    return this.workerRepository.findAll();
+  async listWorkers(
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<Worker>> {
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    const [items, totalItems] = await Promise.all([
+      this.workerRepository.findPaginated({
+        limit: pagination.itemsPerPage,
+        offset,
+      }),
+      this.workerRepository.count(),
+    ]);
+    return { items, totalItems };
   }
 
   async createJob(input: unknown): Promise<WorkerJob> {
@@ -122,8 +134,22 @@ export class WorkerService {
     return updated;
   }
 
-  async listJobs(workerId: string, status?: JobStatus): Promise<WorkerJob[]> {
-    return this.workerJobRepository.findJobsByWorkerId(workerId, status);
+  async listJobs(
+    workerId: string,
+    status: JobStatus | undefined,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<WorkerJob>> {
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    const [items, totalItems] = await Promise.all([
+      this.workerJobRepository.findJobsPaginated({
+        workerId,
+        status,
+        limit: pagination.itemsPerPage,
+        offset,
+      }),
+      this.workerJobRepository.countJobs(workerId, status),
+    ]);
+    return { items, totalItems };
   }
 
   async getJob(uuid: string): Promise<WorkerJob> {
