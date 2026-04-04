@@ -26,9 +26,15 @@ function createMockWorkerJobRepository(): WorkerJobRepository {
   };
 }
 
+const WORKER_UUID = "550e8400-e29b-41d4-a716-446655440003";
+const TASK_UUID = "550e8400-e29b-41d4-a716-446655440001";
+const JOB_UUID = "550e8400-e29b-41d4-a716-446655440010";
+
 function makeWorker(overrides: Partial<Worker> = {}): Worker {
+  const uuid = overrides.uuid ?? WORKER_UUID;
   return {
-    uuid: "550e8400-e29b-41d4-a716-446655440003",
+    "@id": `/workers/${uuid}`,
+    uuid,
     name: "Test Worker",
     token: "test-token-123",
     status: "active",
@@ -40,12 +46,14 @@ function makeWorker(overrides: Partial<Worker> = {}): Worker {
 }
 
 function makeWorkerJob(overrides: Partial<WorkerJob> = {}): WorkerJob {
+  const uuid = overrides.uuid ?? JOB_UUID;
   return {
-    uuid: "550e8400-e29b-41d4-a716-446655440010",
-    workerId: "550e8400-e29b-41d4-a716-446655440003",
+    "@id": `/jobs/${uuid}`,
+    uuid,
+    worker: `/workers/${WORKER_UUID}`,
     type: "execute_task",
     status: "pending",
-    taskId: null,
+    task: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides,
@@ -169,16 +177,18 @@ describe("WorkerService", () => {
     it("should create a job when valid data is provided", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const workerId = "550e8400-e29b-41d4-a716-446655440003";
-      const expectedJob = makeWorkerJob({ workerId });
+      const expectedJob = makeWorkerJob({ worker: `/workers/${WORKER_UUID}` });
 
       vi.mocked(workerJobRepository.createJob).mockResolvedValue(expectedJob);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.createJob(workerId, { type: "execute_task" });
+      const result = await service.createJob({
+        worker: `/workers/${WORKER_UUID}`,
+        type: "execute_task",
+      });
 
       expect(result).toEqual(expectedJob);
-      expect(workerJobRepository.createJob).toHaveBeenCalledWith(workerId, {
+      expect(workerJobRepository.createJob).toHaveBeenCalledWith(WORKER_UUID, {
         type: "execute_task",
       });
     });
@@ -189,24 +199,29 @@ describe("WorkerService", () => {
       const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(
-        service.createJob("worker-uuid", { type: "invalid_type" }),
+        service.createJob({
+          worker: `/workers/${WORKER_UUID}`,
+          type: "invalid_type",
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
     it("should throw ValidationError when task already has a job", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const workerId = "550e8400-e29b-41d4-a716-446655440003";
-      const taskId = "550e8400-e29b-41d4-a716-446655440001";
 
       vi.mocked(workerJobRepository.findJobByTaskId).mockResolvedValue(
-        makeWorkerJob({ taskId }),
+        makeWorkerJob({ task: `/tasks/${TASK_UUID}` }),
       );
 
       const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(
-        service.createJob(workerId, { type: "execute_task", taskId }),
+        service.createJob({
+          worker: `/workers/${WORKER_UUID}`,
+          type: "execute_task",
+          task: `/tasks/${TASK_UUID}`,
+        }),
       ).rejects.toThrow(ValidationError);
     });
   });
@@ -248,17 +263,16 @@ describe("WorkerService", () => {
     it("should return jobs for a worker", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const workerId = "550e8400-e29b-41d4-a716-446655440003";
-      const expected = [makeWorkerJob({ workerId })];
+      const expected = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}` })];
 
       vi.mocked(workerJobRepository.findJobsByWorkerId).mockResolvedValue(expected);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.listJobs(workerId);
+      const result = await service.listJobs(WORKER_UUID);
 
       expect(result).toEqual(expected);
       expect(workerJobRepository.findJobsByWorkerId).toHaveBeenCalledWith(
-        workerId,
+        WORKER_UUID,
         undefined,
       );
     });
@@ -266,17 +280,16 @@ describe("WorkerService", () => {
     it("should return jobs filtered by status", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const workerId = "550e8400-e29b-41d4-a716-446655440003";
-      const expected = [makeWorkerJob({ workerId, status: "pending" })];
+      const expected = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}`, status: "pending" })];
 
       vi.mocked(workerJobRepository.findJobsByWorkerId).mockResolvedValue(expected);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.listJobs(workerId, "pending");
+      const result = await service.listJobs(WORKER_UUID, "pending");
 
       expect(result).toEqual(expected);
       expect(workerJobRepository.findJobsByWorkerId).toHaveBeenCalledWith(
-        workerId,
+        WORKER_UUID,
         "pending",
       );
     });

@@ -1,5 +1,7 @@
 import { Router } from "express";
 
+import { parseIri } from "../shared/iri/index.js";
+
 import type { WorkerService } from "./worker.service.js";
 
 export function createWorkerRoutes(service: WorkerService): Router {
@@ -30,13 +32,12 @@ export function createWorkerRoutes(service: WorkerService): Router {
 
   // Job endpoints
   router.post("/jobs", async (request, response) => {
-    const { workerId, ...jobData } = request.body;
-    const job = await service.createJob(workerId, jobData);
+    const job = await service.createJob(request.body);
     response.status(201).json(job);
   });
 
   router.get("/jobs", async (request, response) => {
-    const workerId = request.query["workerId"]?.toString();
+    const workerIri = request.query["worker"]?.toString();
     const status = request.query["status"]?.toString() as
       | "pending"
       | "in_progress"
@@ -44,13 +45,14 @@ export function createWorkerRoutes(service: WorkerService): Router {
       | "failed"
       | undefined;
 
-    if (!workerId) {
+    if (!workerIri) {
       response
         .status(400)
-        .json({ error: "workerId query parameter is required" });
+        .json({ error: "worker query parameter is required" });
       return;
     }
 
+    const workerId = parseIri(workerIri, "workers");
     const jobs = await service.listJobs(workerId, status);
     response.json(jobs);
   });

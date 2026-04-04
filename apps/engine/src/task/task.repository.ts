@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
+import { toIri } from "../shared/iri/index.js";
 
 import { task } from "./task.schema.js";
 import type { TaskStatus } from "./task.schema.js";
@@ -13,12 +14,13 @@ import type {
 
 function toTask(row: typeof task.$inferSelect): Task {
   return {
+    "@id": toIri("tasks", row.uuid),
     uuid: row.uuid,
     title: row.title,
-    projectId: row.projectId,
-    parentId: row.parentId,
+    project: toIri("projects", row.projectId),
+    parent: row.parentId ? toIri("tasks", row.parentId) : null,
     status: row.status as TaskStatus,
-    agentId: row.agentId,
+    agent: row.agentId ? toIri("agents", row.agentId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

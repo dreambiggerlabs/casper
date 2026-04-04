@@ -1,5 +1,7 @@
 import { Router } from "express";
 
+import { parseIri } from "../shared/iri/index.js";
+
 import type { TaskService } from "./task.service.js";
 
 export function createTaskRoutes(service: TaskService): Router {
@@ -11,9 +13,10 @@ export function createTaskRoutes(service: TaskService): Router {
   });
 
   router.get("/tasks", async (request, response) => {
+    const agentIri = request.query["agent"]?.toString();
     const tasks = await service.listTasks({
       status: request.query["status"]?.toString(),
-      agentId: request.query["agentId"]?.toString(),
+      agentId: agentIri ? parseIri(agentIri, "agents") : undefined,
     });
     response.json(tasks);
   });

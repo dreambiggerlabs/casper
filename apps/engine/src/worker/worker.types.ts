@@ -15,6 +15,7 @@ export type JobType =
 export type JobStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export interface Worker {
+  "@id": string;
   uuid: string;
   name: string;
   token: string;
@@ -25,11 +26,12 @@ export interface Worker {
 }
 
 export interface WorkerJob {
+  "@id": string;
   uuid: string;
-  workerId: string;
+  worker: string;
   type: JobType;
   status: JobStatus;
-  taskId: string | null;
+  task: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,7 +67,7 @@ export interface WorkerJobReader {
 }
 
 export interface WorkerJobWriter {
-  createJob(workerId: string, data: CreateJob): Promise<WorkerJob>;
+  createJob(workerId: string, data: { type: string; taskId?: string }): Promise<WorkerJob>;
   updateJobStatus(
     uuid: string,
     status: JobStatus,

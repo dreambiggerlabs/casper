@@ -9,12 +9,13 @@ import type {
 } from "./task.schema.js";
 
 export interface Task {
+  "@id": string;
   uuid: string;
   title: string;
-  projectId: string;
-  parentId: string | null;
+  project: string;
+  parent: string | null;
   status: TaskStatus;
-  agentId: string | null;
+  agent: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

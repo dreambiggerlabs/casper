@@ -15,8 +15,10 @@ function createMockRepository(): ProjectRepository {
 }
 
 function makeProject(overrides: Partial<Project> = {}): Project {
+  const uuid = overrides.uuid ?? "550e8400-e29b-41d4-a716-446655440000";
   return {
-    uuid: "550e8400-e29b-41d4-a716-446655440000",
+    "@id": `/projects/${uuid}`,
+    uuid,
     title: "Test Project",
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),

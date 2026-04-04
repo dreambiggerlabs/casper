@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
+import { toIri } from "../shared/iri/index.js";
 
 import { agent } from "./agent.schema.js";
 import type { Agent, AgentRepository, CreateAgent } from "./agent.types.js";
 
 function toAgent(row: typeof agent.$inferSelect): Agent {
   return {
+    "@id": toIri("agents", row.uuid),
     uuid: row.uuid,
     name: row.name,
     createdAt: row.createdAt,
