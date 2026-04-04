@@ -67,7 +67,10 @@ export interface WorkerJobReader {
 }
 
 export interface WorkerJobWriter {
-  createJob(workerId: string, data: { type: string; taskId?: string }): Promise<WorkerJob>;
+  createJob(
+    workerId: string,
+    data: { type: string; taskId?: string },
+  ): Promise<WorkerJob>;
   updateJobStatus(
     uuid: string,
     status: JobStatus,

@@ -73,10 +73,9 @@ export const updateTaskSchema = z
     project: iriSchema("projects").optional(),
     parent: nullableIriSchema("tasks").optional(),
   })
-  .refine(
-    (data) => Object.keys(data).length > 0,
-    { message: "At least one field must be provided" },
-  )
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  })
   .transform(({ title, project, parent }) => ({
     title,
     projectId: project,

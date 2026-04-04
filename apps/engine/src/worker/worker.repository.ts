@@ -132,7 +132,10 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     return row ? toWorkerJob(row) : undefined;
   }
 
-  async createJob(workerId: string, data: { type: string; taskId?: string }): Promise<WorkerJob> {
+  async createJob(
+    workerId: string,
+    data: { type: string; taskId?: string },
+  ): Promise<WorkerJob> {
     const rows = await this.database
       .insert(workerJob)
       .values({ workerId, ...data })
