@@ -35,3 +35,7 @@ jobs:
       - name: Run studio checks
         if: steps.check.outputs.exists == 'true'
         run: npm run check --workspace=@casper/studio
+
+      - name: Run worker checks
+        if: steps.check.outputs.exists == 'true'
+        run: npm run check --workspace=@casper/worker
