@@ -4,8 +4,6 @@
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
-
     // Strict mode and additional safety checks
     "strict": true,
     "noUncheckedIndexedAccess": true,

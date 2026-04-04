@@ -35,9 +35,7 @@ export const task = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => ({
     projectForeignKey: foreignKey({

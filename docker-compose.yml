@@ -9,9 +9,17 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   engine:
-    image: node:22-alpine
+    build:
+      context: .docker
+      dockerfile: engine/Dockerfile
     working_dir: /app
     user: "${UID:-1000}:${GID:-1000}"
     ports:
@@ -22,7 +30,8 @@ services:
       - ./apps/engine:/app
     command: sh -c "npm install && npm run db:migrate && npm run dev"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
       interval: 5s
@@ -31,7 +40,9 @@ services:
       start_period: 30s
 
   studio:
-    image: node:22-alpine
+    build:
+      context: .docker
+      dockerfile: studio/Dockerfile
     working_dir: /app
     user: "${UID:-1000}:${GID:-1000}"
     ports:
@@ -43,7 +54,9 @@ services:
       - engine
 
   worker:
-    image: node:22-alpine
+    build:
+      context: .docker
+      dockerfile: worker/Dockerfile
     working_dir: /app
     user: "${UID:-1000}:${GID:-1000}"
     environment:
@@ -51,6 +64,7 @@ services:
       WORKER_NAME: "${WORKER_NAME:-}"
     volumes:
       - ./apps/worker:/app
+      - casper:/home/node/.casper
     command: sh -c "npm install && npm run dev"
     depends_on:
       engine:
@@ -58,3 +72,4 @@ services:
 
 volumes:
   pgdata:
+  casper:

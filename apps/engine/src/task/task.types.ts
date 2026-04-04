@@ -17,7 +17,7 @@ export interface Task {
   status: TaskStatus;
   agent: string | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
 
 export type CreateTask = z.infer<typeof createTaskSchema>;

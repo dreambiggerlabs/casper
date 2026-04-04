@@ -7,7 +7,7 @@ export interface Agent {
   uuid: string;
   name: string;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
 }
 
 export type CreateAgent = z.infer<typeof createAgentSchema>;
