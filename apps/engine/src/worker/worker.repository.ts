@@ -1,10 +1,10 @@
 import { eq, and } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
+import { toIri } from "../shared/iri/index.js";
 
 import { worker, workerJob } from "./worker.schema.js";
 import type {
-  CreateJob,
   Worker,
   WorkerJob,
   WorkerRepository,
@@ -15,6 +15,7 @@ import type {
 
 function toWorker(row: typeof worker.$inferSelect): Worker {
   return {
+    "@id": toIri("workers", row.uuid),
     uuid: row.uuid,
     name: row.name,
     token: row.token,
@@ -27,11 +28,12 @@ function toWorker(row: typeof worker.$inferSelect): Worker {
 
 function toWorkerJob(row: typeof workerJob.$inferSelect): WorkerJob {
   return {
+    "@id": toIri("jobs", row.uuid),
     uuid: row.uuid,
-    workerId: row.workerId,
+    worker: toIri("workers", row.workerId),
     type: row.type as WorkerJob["type"],
     status: row.status as JobStatus,
-    taskId: row.taskId,
+    task: row.taskId ? toIri("tasks", row.taskId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -130,7 +132,10 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     return row ? toWorkerJob(row) : undefined;
   }
 
-  async createJob(workerId: string, data: CreateJob): Promise<WorkerJob> {
+  async createJob(
+    workerId: string,
+    data: { type: string; taskId?: string },
+  ): Promise<WorkerJob> {
     const rows = await this.database
       .insert(workerJob)
       .values({ workerId, ...data })

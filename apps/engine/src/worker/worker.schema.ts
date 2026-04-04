@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 import { task } from "../task/task.schema.js";
+import { iriSchema } from "../shared/iri/index.js";
 
 export const workerStatusSchema = z.enum(["active", "inactive"]);
 
@@ -79,10 +80,17 @@ export const createWorkerSchema = z.object({
   name: z.string().min(1, "Name is required").max(255).optional(),
 });
 
-export const createJobSchema = z.object({
-  type: jobTypeSchema,
-  taskId: z.string().uuid("Task ID must be a valid UUID").optional(),
-});
+export const createJobSchema = z
+  .object({
+    worker: iriSchema("workers"),
+    type: jobTypeSchema,
+    task: iriSchema("tasks").optional(),
+  })
+  .transform(({ worker, type, task }) => ({
+    workerId: worker,
+    type,
+    taskId: task,
+  }));
 
 export const updateJobStatusSchema = z.object({
   status: jobStatusSchema,

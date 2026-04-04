@@ -386,11 +386,14 @@ export const openApiSpec = {
         operationId: "listJobs",
         parameters: [
           {
-            name: "workerId",
+            name: "worker",
             in: "query",
             required: true,
-            description: "Filter by worker UUID",
-            schema: { type: "string", format: "uuid" },
+            description: "Filter by worker IRI (e.g. /workers/{uuid})",
+            schema: {
+              type: "string",
+              description: "Worker IRI in the format /workers/{uuid}",
+            },
           },
           {
             name: "status",
@@ -416,7 +419,7 @@ export const openApiSpec = {
             },
           },
           "400": {
-            description: "Missing workerId parameter",
+            description: "Missing worker parameter",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Error" },
@@ -570,11 +573,14 @@ export const openApiSpec = {
             },
           },
           {
-            name: "agentId",
+            name: "agent",
             in: "query",
             required: false,
-            description: "Filter by agent UUID",
-            schema: { type: "string", format: "uuid" },
+            description: "Filter by agent IRI (e.g. /agents/{uuid})",
+            schema: {
+              type: "string",
+              description: "Agent IRI in the format /agents/{uuid}",
+            },
           },
         ],
         responses: {
@@ -811,8 +817,12 @@ export const openApiSpec = {
     schemas: {
       Project: {
         type: "object",
-        required: ["uuid", "title", "createdAt", "updatedAt"],
+        required: ["@id", "uuid", "title", "createdAt", "updatedAt"],
         properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /projects/{uuid})",
+          },
           uuid: { type: "string", format: "uuid" },
           title: { type: "string", maxLength: 255 },
           createdAt: { type: "string", format: "date-time" },
@@ -842,8 +852,12 @@ export const openApiSpec = {
       },
       Agent: {
         type: "object",
-        required: ["uuid", "name", "createdAt", "updatedAt"],
+        required: ["@id", "uuid", "name", "createdAt", "updatedAt"],
         properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /agents/{uuid})",
+          },
           uuid: { type: "string", format: "uuid" },
           name: { type: "string", maxLength: 255 },
           createdAt: { type: "string", format: "date-time" },
@@ -863,8 +877,20 @@ export const openApiSpec = {
       },
       Worker: {
         type: "object",
-        required: ["uuid", "name", "token", "status", "createdAt", "updatedAt"],
+        required: [
+          "@id",
+          "uuid",
+          "name",
+          "token",
+          "status",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /workers/{uuid})",
+          },
           uuid: { type: "string", format: "uuid" },
           name: { type: "string", maxLength: 255 },
           token: { type: "string", description: "Worker authentication token" },
@@ -903,16 +929,24 @@ export const openApiSpec = {
       WorkerJob: {
         type: "object",
         required: [
+          "@id",
           "uuid",
-          "workerId",
+          "worker",
           "type",
           "status",
           "createdAt",
           "updatedAt",
         ],
         properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /jobs/{uuid})",
+          },
           uuid: { type: "string", format: "uuid" },
-          workerId: { type: "string", format: "uuid" },
+          worker: {
+            type: "string",
+            description: "Worker IRI (e.g. /workers/{uuid})",
+          },
           type: {
             type: "string",
             enum: ["execute_task", "cleanup", "start_preview", "stop_preview"],
@@ -921,9 +955,9 @@ export const openApiSpec = {
             type: "string",
             enum: ["pending", "in_progress", "completed", "failed"],
           },
-          taskId: {
+          task: {
             type: ["string", "null"],
-            format: "uuid",
+            description: "Task IRI (e.g. /tasks/{uuid}) or null",
           },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
@@ -931,21 +965,19 @@ export const openApiSpec = {
       },
       CreateJob: {
         type: "object",
-        required: ["workerId", "type"],
+        required: ["worker", "type"],
         properties: {
-          workerId: {
+          worker: {
             type: "string",
-            format: "uuid",
-            description: "Worker UUID to assign the job to",
+            description: "Worker IRI (e.g. /workers/{uuid})",
           },
           type: {
             type: "string",
             enum: ["execute_task", "cleanup", "start_preview", "stop_preview"],
           },
-          taskId: {
+          task: {
             type: "string",
-            format: "uuid",
-            description: "Task UUID (required for execute_task type)",
+            description: "Task IRI (e.g. /tasks/{uuid})",
           },
         },
       },
@@ -962,20 +994,28 @@ export const openApiSpec = {
       Task: {
         type: "object",
         required: [
+          "@id",
           "uuid",
           "title",
-          "projectId",
+          "project",
           "status",
           "createdAt",
           "updatedAt",
         ],
         properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /tasks/{uuid})",
+          },
           uuid: { type: "string", format: "uuid" },
           title: { type: "string", maxLength: 255 },
-          projectId: { type: "string", format: "uuid" },
-          parentId: {
+          project: {
+            type: "string",
+            description: "Project IRI (e.g. /projects/{uuid})",
+          },
+          parent: {
             type: ["string", "null"],
-            format: "uuid",
+            description: "Parent task IRI (e.g. /tasks/{uuid}) or null",
           },
           status: {
             type: "string",
@@ -987,9 +1027,9 @@ export const openApiSpec = {
               "completed",
             ],
           },
-          agentId: {
+          agent: {
             type: ["string", "null"],
-            format: "uuid",
+            description: "Agent IRI (e.g. /agents/{uuid}) or null",
           },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
@@ -997,20 +1037,20 @@ export const openApiSpec = {
       },
       CreateTask: {
         type: "object",
-        required: ["title", "projectId"],
+        required: ["title", "project"],
         properties: {
           title: {
             type: "string",
             minLength: 1,
             maxLength: 255,
           },
-          projectId: {
+          project: {
             type: "string",
-            format: "uuid",
+            description: "Project IRI (e.g. /projects/{uuid})",
           },
-          parentId: {
+          parent: {
             type: "string",
-            format: "uuid",
+            description: "Parent task IRI (e.g. /tasks/{uuid})",
           },
         },
       },
@@ -1022,23 +1062,23 @@ export const openApiSpec = {
             minLength: 1,
             maxLength: 255,
           },
-          projectId: {
+          project: {
             type: "string",
-            format: "uuid",
+            description: "Project IRI (e.g. /projects/{uuid})",
           },
-          parentId: {
+          parent: {
             type: ["string", "null"],
-            format: "uuid",
+            description: "Parent task IRI (e.g. /tasks/{uuid}) or null",
           },
         },
       },
       AssignTask: {
         type: "object",
-        required: ["agentId"],
+        required: ["agent"],
         properties: {
-          agentId: {
+          agent: {
             type: "string",
-            format: "uuid",
+            description: "Agent IRI (e.g. /agents/{uuid})",
           },
         },
       },

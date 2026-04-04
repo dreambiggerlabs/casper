@@ -6,6 +6,7 @@ import type {
 } from "./project.schema.js";
 
 export interface Project {
+  "@id": string;
   uuid: string;
   title: string;
   createdAt: Date;

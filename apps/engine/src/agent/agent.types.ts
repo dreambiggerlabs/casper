@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { createAgentSchema } from "./agent.schema.js";
 
 export interface Agent {
+  "@id": string;
   uuid: string;
   name: string;
   createdAt: Date;

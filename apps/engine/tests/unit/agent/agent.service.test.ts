@@ -14,8 +14,10 @@ function createMockAgentRepository(): AgentRepository {
 }
 
 function makeAgent(overrides: Partial<Agent> = {}): Agent {
+  const uuid = overrides.uuid ?? "550e8400-e29b-41d4-a716-446655440002";
   return {
-    uuid: "550e8400-e29b-41d4-a716-446655440002",
+    "@id": `/agents/${uuid}`,
+    uuid,
     name: "Test Agent",
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),

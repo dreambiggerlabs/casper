@@ -75,7 +75,7 @@ export class WorkerService {
     return this.workerRepository.findAll();
   }
 
-  async createJob(workerId: string, input: unknown): Promise<WorkerJob> {
+  async createJob(input: unknown): Promise<WorkerJob> {
     const parsed = createJobSchema.safeParse(input);
     if (!parsed.success) {
       const violations = zodIssuesToViolations(parsed.error.issues);
@@ -89,12 +89,15 @@ export class WorkerService {
       );
       if (existingJob) {
         throw new ValidationError("Task already has a job", [
-          { field: "taskId", message: "A job already exists for this task" },
+          { field: "task", message: "A job already exists for this task" },
         ]);
       }
     }
 
-    return this.workerJobRepository.createJob(workerId, parsed.data);
+    return this.workerJobRepository.createJob(parsed.data.workerId, {
+      type: parsed.data.type,
+      taskId: parsed.data.taskId,
+    });
   }
 
   async updateJobStatus(uuid: string, input: unknown): Promise<WorkerJob> {

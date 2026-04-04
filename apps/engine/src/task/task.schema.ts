@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { project } from "../project/project.schema.js";
 import { agent } from "../agent/agent.schema.js";
+import { iriSchema, nullableIriSchema } from "../shared/iri/index.js";
 
 export const taskStatusSchema = z.enum([
   "pending",
@@ -54,29 +55,40 @@ export const task = pgTable(
   }),
 );
 
-export const createTaskSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  projectId: z.string().uuid("Project ID must be a valid UUID"),
-  parentId: z.string().uuid("Parent ID must be a valid UUID").optional(),
-});
+export const createTaskSchema = z
+  .object({
+    title: z.string().min(1, "Title is required").max(255),
+    project: iriSchema("projects"),
+    parent: iriSchema("tasks").optional(),
+  })
+  .transform(({ title, project, parent }) => ({
+    title,
+    projectId: project,
+    parentId: parent,
+  }));
 
 export const updateTaskSchema = z
   .object({
     title: z.string().min(1, "Title must not be empty").max(255).optional(),
-    projectId: z.string().uuid("Project ID must be a valid UUID").optional(),
-    parentId: z
-      .string()
-      .uuid("Parent ID must be a valid UUID")
-      .optional()
-      .nullable(),
+    project: iriSchema("projects").optional(),
+    parent: nullableIriSchema("tasks").optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
-  });
+  })
+  .transform(({ title, project, parent }) => ({
+    title,
+    projectId: project,
+    parentId: parent,
+  }));
 
-export const assignTaskSchema = z.object({
-  agentId: z.string().uuid("Agent ID must be a valid UUID"),
-});
+export const assignTaskSchema = z
+  .object({
+    agent: iriSchema("agents"),
+  })
+  .transform(({ agent }) => ({
+    agentId: agent,
+  }));
 
 export const updateTaskStatusSchema = z.object({
   status: taskStatusSchema,

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
+import { toIri } from "../shared/iri/index.js";
 
 import { project } from "./project.schema.js";
 import type {
@@ -12,6 +13,7 @@ import type {
 
 function toProject(row: typeof project.$inferSelect): Project {
   return {
+    "@id": toIri("projects", row.uuid),
     uuid: row.uuid,
     title: row.title,
     createdAt: row.createdAt,
