@@ -39,9 +39,7 @@ export class DrizzleProjectRepository implements ProjectRepository {
   }
 
   async count(): Promise<number> {
-    const rows = await this.db
-      .select({ count: drizzleCount() })
-      .from(project);
+    const rows = await this.db.select({ count: drizzleCount() }).from(project);
     return rows[0]?.count ?? 0;
   }
 

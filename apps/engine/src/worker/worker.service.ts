@@ -6,7 +6,10 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
-import type { PaginatedResult, PaginationParams } from "../shared/pagination/index.js";
+import type {
+  PaginatedResult,
+  PaginationParams,
+} from "../shared/pagination/index.js";
 
 import {
   createWorkerSchema,

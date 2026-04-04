@@ -4,7 +4,10 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
-import type { PaginatedResult, PaginationParams } from "../shared/pagination/index.js";
+import type {
+  PaginatedResult,
+  PaginationParams,
+} from "../shared/pagination/index.js";
 
 import { createProjectSchema, updateProjectSchema } from "./project.schema.js";
 import type { Project, ProjectRepository } from "./project.types.js";

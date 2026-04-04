@@ -4,7 +4,10 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
-import type { PaginatedResult, PaginationParams } from "../shared/pagination/index.js";
+import type {
+  PaginatedResult,
+  PaginationParams,
+} from "../shared/pagination/index.js";
 import type { AgentReader } from "../agent/agent.types.js";
 import type { ProjectReader } from "../project/project.types.js";
 
@@ -73,7 +76,9 @@ export class TaskService {
     }
 
     const repoFilters = {
-      status: validatedStatus as import("./task.schema.js").TaskStatus | undefined,
+      status: validatedStatus as
+        | import("./task.schema.js").TaskStatus
+        | undefined,
       agentId: filters?.agentId,
     };
 

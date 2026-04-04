@@ -83,9 +83,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     projectId?: string;
   }): Promise<number> {
     const where = this.buildFilters(filters);
-    const query = this.database
-      .select({ count: drizzleCount() })
-      .from(task);
+    const query = this.database.select({ count: drizzleCount() }).from(task);
     const rows = where ? await query.where(where) : await query;
     return rows[0]?.count ?? 0;
   }
