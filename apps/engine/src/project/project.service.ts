@@ -4,6 +4,11 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
+import type {
+  PaginatedResult,
+  PaginationParams,
+} from "../shared/pagination/index.js";
+
 import { createProjectSchema, updateProjectSchema } from "./project.schema.js";
 import type { Project, ProjectRepository } from "./project.types.js";
 
@@ -27,8 +32,18 @@ export class ProjectService {
     return project;
   }
 
-  async listProjects(): Promise<Project[]> {
-    return this.repository.findAll();
+  async listProjects(
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<Project>> {
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    const [items, totalItems] = await Promise.all([
+      this.repository.findPaginated({
+        limit: pagination.itemsPerPage,
+        offset,
+      }),
+      this.repository.count(),
+    ]);
+    return { items, totalItems };
   }
 
   async updateProject(uuid: string, input: unknown): Promise<Project> {

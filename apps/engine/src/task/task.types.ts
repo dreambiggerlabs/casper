@@ -30,6 +30,18 @@ export interface TaskReader {
   findByProjectId(projectId: string): Promise<Task[]>;
   findByStatusAndAgentId(status: TaskStatus, agentId: string): Promise<Task[]>;
   findAll(): Promise<Task[]>;
+  count(filters?: {
+    status?: TaskStatus;
+    agentId?: string;
+    projectId?: string;
+  }): Promise<number>;
+  findPaginated(params: {
+    limit: number;
+    offset: number;
+    status?: TaskStatus;
+    agentId?: string;
+    projectId?: string;
+  }): Promise<Task[]>;
 }
 
 export interface TaskWriter {

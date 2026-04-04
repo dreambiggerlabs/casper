@@ -15,6 +15,8 @@ export type CreateAgent = z.infer<typeof createAgentSchema>;
 export interface AgentReader {
   findByUuid(uuid: string): Promise<Agent | undefined>;
   findAll(): Promise<Agent[]>;
+  count(): Promise<number>;
+  findPaginated(params: { limit: number; offset: number }): Promise<Agent[]>;
 }
 
 export interface AgentWriter {

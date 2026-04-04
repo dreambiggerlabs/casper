@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, count as drizzleCount } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
@@ -30,6 +30,25 @@ export class DrizzleAgentRepository implements AgentRepository {
 
   async findAll(): Promise<Agent[]> {
     const rows = await this.database.select().from(agent);
+    return rows.map(toAgent);
+  }
+
+  async count(): Promise<number> {
+    const rows = await this.database
+      .select({ count: drizzleCount() })
+      .from(agent);
+    return rows[0]?.count ?? 0;
+  }
+
+  async findPaginated(params: {
+    limit: number;
+    offset: number;
+  }): Promise<Agent[]> {
+    const rows = await this.database
+      .select()
+      .from(agent)
+      .limit(params.limit)
+      .offset(params.offset);
     return rows.map(toAgent);
   }
 

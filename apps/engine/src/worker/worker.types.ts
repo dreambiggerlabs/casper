@@ -45,6 +45,8 @@ export interface WorkerReader {
   findByToken(token: string): Promise<Worker | undefined>;
   findAll(): Promise<Worker[]>;
   findActive(): Promise<Worker[]>;
+  count(): Promise<number>;
+  findPaginated(params: { limit: number; offset: number }): Promise<Worker[]>;
 }
 
 export interface WorkerWriter {
@@ -64,6 +66,13 @@ export interface WorkerJobReader {
     status?: JobStatus,
   ): Promise<WorkerJob[]>;
   findJobByTaskId(taskId: string): Promise<WorkerJob | undefined>;
+  countJobs(workerId: string, status?: JobStatus): Promise<number>;
+  findJobsPaginated(params: {
+    workerId: string;
+    status?: JobStatus;
+    limit: number;
+    offset: number;
+  }): Promise<WorkerJob[]>;
 }
 
 export interface WorkerJobWriter {

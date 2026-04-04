@@ -14,6 +14,8 @@ function createMockTaskRepository(): TaskRepository {
     findByProjectId: vi.fn(),
     findByStatusAndAgentId: vi.fn(),
     findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     assign: vi.fn(),
@@ -25,6 +27,8 @@ function createMockProjectReader(): ProjectReader {
   return {
     findByUuid: vi.fn(),
     findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
   };
 }
 
@@ -32,6 +36,8 @@ function createMockAgentReader(): AgentReader {
   return {
     findByUuid: vi.fn(),
     findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
   };
 }
 
@@ -199,46 +205,55 @@ describe("TaskService", () => {
   });
 
   describe("listTasks", () => {
-    it("should return all tasks when no filters provided", async () => {
+    const pagination = { page: 1, itemsPerPage: 30 };
+
+    it("should return paginated tasks when no filters provided", async () => {
       const taskRepository = createMockTaskRepository();
-      const expected = [makeTask(), makeTask({ uuid: "other-uuid" })];
-      vi.mocked(taskRepository.findAll).mockResolvedValue(expected);
+      const tasks = [makeTask(), makeTask({ uuid: "other-uuid" })];
+      vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
+      vi.mocked(taskRepository.count).mockResolvedValue(2);
 
       const service = new TaskService(
         taskRepository,
         createMockProjectReader(),
         createMockAgentReader(),
       );
-      const result = await service.listTasks();
+      const result = await service.listTasks(undefined, pagination);
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ items: tasks, totalItems: 2 });
+      expect(taskRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
+        status: undefined,
+        agentId: undefined,
+      });
     });
 
-    it("should return tasks filtered by status and agentId", async () => {
+    it("should return paginated tasks filtered by status and agentId", async () => {
       const taskRepository = createMockTaskRepository();
-      const expected = [
+      const tasks = [
         makeTask({ status: "assigned", agent: `/agents/${AGENT_UUID}` }),
-        makeTask({ status: "assigned", agent: `/agents/${AGENT_UUID}`, uuid: "task-2" }),
       ];
-      vi.mocked(taskRepository.findByStatusAndAgentId).mockResolvedValue(
-        expected,
-      );
+      vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
+      vi.mocked(taskRepository.count).mockResolvedValue(1);
 
       const service = new TaskService(
         taskRepository,
         createMockProjectReader(),
         createMockAgentReader(),
       );
-      const result = await service.listTasks({
+      const result = await service.listTasks(
+        { status: "assigned", agentId: AGENT_UUID },
+        pagination,
+      );
+
+      expect(result).toEqual({ items: tasks, totalItems: 1 });
+      expect(taskRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
         status: "assigned",
         agentId: AGENT_UUID,
       });
-
-      expect(result).toEqual(expected);
-      expect(taskRepository.findByStatusAndAgentId).toHaveBeenCalledWith(
-        "assigned",
-        AGENT_UUID,
-      );
     });
 
     it("should throw ValidationError when status is invalid", async () => {
@@ -249,17 +264,19 @@ describe("TaskService", () => {
       );
 
       await expect(
-        service.listTasks({ status: "invalid", agentId: AGENT_UUID }),
+        service.listTasks({ status: "invalid", agentId: AGENT_UUID }, pagination),
       ).rejects.toThrow(ValidationError);
     });
   });
 
   describe("listTasksByProject", () => {
-    it("should return tasks for a given project when project exists", async () => {
+    const pagination = { page: 1, itemsPerPage: 30 };
+
+    it("should return paginated tasks for a given project when project exists", async () => {
       const taskRepository = createMockTaskRepository();
       const projectReader = createMockProjectReader();
       const projectId = "project-uuid";
-      const expected = [
+      const tasks = [
         makeTask({ project: `/projects/${projectId}` }),
         makeTask({ project: `/projects/${projectId}` }),
       ];
@@ -267,16 +284,22 @@ describe("TaskService", () => {
       vi.mocked(projectReader.findByUuid).mockResolvedValue(
         makeProject(projectId),
       );
-      vi.mocked(taskRepository.findByProjectId).mockResolvedValue(expected);
+      vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
+      vi.mocked(taskRepository.count).mockResolvedValue(2);
 
       const service = new TaskService(
         taskRepository,
         projectReader,
         createMockAgentReader(),
       );
-      const result = await service.listTasksByProject(projectId);
+      const result = await service.listTasksByProject(projectId, pagination);
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ items: tasks, totalItems: 2 });
+      expect(taskRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
+        projectId,
+      });
     });
 
     it("should throw NotFoundError when project does not exist", async () => {
@@ -291,9 +314,9 @@ describe("TaskService", () => {
         createMockAgentReader(),
       );
 
-      await expect(service.listTasksByProject("nonexistent")).rejects.toThrow(
-        NotFoundError,
-      );
+      await expect(
+        service.listTasksByProject("nonexistent", pagination),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 

@@ -11,6 +11,8 @@ function createMockWorkerRepository(): WorkerRepository {
     findByToken: vi.fn(),
     findAll: vi.fn(),
     findActive: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
     create: vi.fn(),
     updateHeartbeat: vi.fn(),
   };
@@ -21,6 +23,8 @@ function createMockWorkerJobRepository(): WorkerJobRepository {
     findJobByUuid: vi.fn(),
     findJobsByWorkerId: vi.fn(),
     findJobByTaskId: vi.fn(),
+    countJobs: vi.fn(),
+    findJobsPaginated: vi.fn(),
     createJob: vi.fn(),
     updateJobStatus: vi.fn(),
   };
@@ -160,16 +164,21 @@ describe("WorkerService", () => {
   });
 
   describe("listWorkers", () => {
-    it("should return all workers", async () => {
+    it("should return paginated workers", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const expected = [makeWorker(), makeWorker({ uuid: "other-uuid" })];
-      vi.mocked(workerRepository.findAll).mockResolvedValue(expected);
+      const workers = [makeWorker(), makeWorker({ uuid: "other-uuid" })];
+      vi.mocked(workerRepository.findPaginated).mockResolvedValue(workers);
+      vi.mocked(workerRepository.count).mockResolvedValue(2);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.listWorkers();
+      const result = await service.listWorkers({ page: 1, itemsPerPage: 30 });
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ items: workers, totalItems: 2 });
+      expect(workerRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
+      });
     });
   });
 
@@ -260,38 +269,46 @@ describe("WorkerService", () => {
   });
 
   describe("listJobs", () => {
-    it("should return jobs for a worker", async () => {
+    const pagination = { page: 1, itemsPerPage: 30 };
+
+    it("should return paginated jobs for a worker", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const expected = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}` })];
+      const jobs = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}` })];
 
-      vi.mocked(workerJobRepository.findJobsByWorkerId).mockResolvedValue(expected);
+      vi.mocked(workerJobRepository.findJobsPaginated).mockResolvedValue(jobs);
+      vi.mocked(workerJobRepository.countJobs).mockResolvedValue(1);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.listJobs(WORKER_UUID);
+      const result = await service.listJobs(WORKER_UUID, undefined, pagination);
 
-      expect(result).toEqual(expected);
-      expect(workerJobRepository.findJobsByWorkerId).toHaveBeenCalledWith(
-        WORKER_UUID,
-        undefined,
-      );
+      expect(result).toEqual({ items: jobs, totalItems: 1 });
+      expect(workerJobRepository.findJobsPaginated).toHaveBeenCalledWith({
+        workerId: WORKER_UUID,
+        status: undefined,
+        limit: 30,
+        offset: 0,
+      });
     });
 
-    it("should return jobs filtered by status", async () => {
+    it("should return paginated jobs filtered by status", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const expected = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}`, status: "pending" })];
+      const jobs = [makeWorkerJob({ worker: `/workers/${WORKER_UUID}`, status: "pending" })];
 
-      vi.mocked(workerJobRepository.findJobsByWorkerId).mockResolvedValue(expected);
+      vi.mocked(workerJobRepository.findJobsPaginated).mockResolvedValue(jobs);
+      vi.mocked(workerJobRepository.countJobs).mockResolvedValue(1);
 
       const service = new WorkerService(workerRepository, workerJobRepository);
-      const result = await service.listJobs(WORKER_UUID, "pending");
+      const result = await service.listJobs(WORKER_UUID, "pending", pagination);
 
-      expect(result).toEqual(expected);
-      expect(workerJobRepository.findJobsByWorkerId).toHaveBeenCalledWith(
-        WORKER_UUID,
-        "pending",
-      );
+      expect(result).toEqual({ items: jobs, totalItems: 1 });
+      expect(workerJobRepository.findJobsPaginated).toHaveBeenCalledWith({
+        workerId: WORKER_UUID,
+        status: "pending",
+        limit: 30,
+        offset: 0,
+      });
     });
   });
 

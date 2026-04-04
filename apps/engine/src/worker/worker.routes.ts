@@ -1,6 +1,10 @@
 import { Router } from "express";
 
 import { parseIri } from "../shared/iri/index.js";
+import {
+  createHydraCollection,
+  parsePaginationParams,
+} from "../shared/pagination/index.js";
 
 import type { WorkerService } from "./worker.service.js";
 
@@ -13,9 +17,17 @@ export function createWorkerRoutes(service: WorkerService): Router {
     response.status(201).json(worker);
   });
 
-  router.get("/workers", async (_request, response) => {
-    const workers = await service.listWorkers();
-    response.json(workers);
+  router.get("/workers", async (request, response) => {
+    const pagination = parsePaginationParams(
+      request.query as Record<string, unknown>,
+    );
+    const result = await service.listWorkers(pagination);
+    const collection = createHydraCollection({
+      ...result,
+      ...pagination,
+      basePath: "/workers",
+    });
+    response.json(collection);
   });
 
   router.get("/workers/:uuid", async (request, response) => {
@@ -52,9 +64,20 @@ export function createWorkerRoutes(service: WorkerService): Router {
       return;
     }
 
+    const pagination = parsePaginationParams(
+      request.query as Record<string, unknown>,
+    );
     const workerId = parseIri(workerIri, "workers");
-    const jobs = await service.listJobs(workerId, status);
-    response.json(jobs);
+    const result = await service.listJobs(workerId, status, pagination);
+    const extraParams: Record<string, string> = { worker: workerIri };
+    if (status) extraParams["status"] = status;
+    const collection = createHydraCollection({
+      ...result,
+      ...pagination,
+      basePath: "/jobs",
+      extraParams,
+    });
+    response.json(collection);
   });
 
   router.get("/jobs/:uuid", async (request, response) => {

@@ -4,6 +4,10 @@ import {
   zodIssuesToViolations,
 } from "../shared/errors/index.js";
 
+import type {
+  PaginatedResult,
+  PaginationParams,
+} from "../shared/pagination/index.js";
 import type { AgentReader } from "../agent/agent.types.js";
 import type { ProjectReader } from "../project/project.types.js";
 
@@ -55,30 +59,61 @@ export class TaskService {
     return task;
   }
 
-  async listTasks(filters?: {
-    status?: string;
-    agentId?: string;
-  }): Promise<Task[]> {
-    if (filters?.status && filters?.agentId) {
+  async listTasks(
+    filters: { status?: string; agentId?: string } | undefined,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<Task>> {
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    let validatedStatus: string | undefined;
+
+    if (filters?.status) {
       const parsedStatus = taskStatusSchema.safeParse(filters.status);
       if (!parsedStatus.success) {
         const violations = zodIssuesToViolations(parsedStatus.error.issues);
         throw new ValidationError("Invalid status", violations);
       }
-      return this.taskRepository.findByStatusAndAgentId(
-        parsedStatus.data,
-        filters.agentId,
-      );
+      validatedStatus = parsedStatus.data;
     }
-    return this.taskRepository.findAll();
+
+    const repoFilters = {
+      status: validatedStatus as
+        | import("./task.schema.js").TaskStatus
+        | undefined,
+      agentId: filters?.agentId,
+    };
+
+    const [items, totalItems] = await Promise.all([
+      this.taskRepository.findPaginated({
+        limit: pagination.itemsPerPage,
+        offset,
+        ...repoFilters,
+      }),
+      this.taskRepository.count(repoFilters),
+    ]);
+
+    return { items, totalItems };
   }
 
-  async listTasksByProject(projectId: string): Promise<Task[]> {
+  async listTasksByProject(
+    projectId: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResult<Task>> {
     const project = await this.projectReader.findByUuid(projectId);
     if (!project) {
       throw new NotFoundError("Project", projectId);
     }
-    return this.taskRepository.findByProjectId(projectId);
+
+    const offset = (pagination.page - 1) * pagination.itemsPerPage;
+    const [items, totalItems] = await Promise.all([
+      this.taskRepository.findPaginated({
+        limit: pagination.itemsPerPage,
+        offset,
+        projectId,
+      }),
+      this.taskRepository.count({ projectId }),
+    ]);
+
+    return { items, totalItems };
   }
 
   async updateTask(uuid: string, input: unknown): Promise<Task> {
