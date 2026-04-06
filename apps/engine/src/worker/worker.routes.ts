@@ -93,5 +93,16 @@ export function createWorkerRoutes(service: WorkerService): Router {
     response.json(job);
   });
 
+  // Task claiming endpoint
+  router.post("/tasks/claim", async (request, response) => {
+    const result = await service.claimTask(request.body);
+    if (!result) {
+      response.status(204).send();
+
+      return;
+    }
+    response.status(201).json(result);
+  });
+
   return router;
 }

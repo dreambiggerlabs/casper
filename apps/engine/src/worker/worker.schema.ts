@@ -91,3 +91,11 @@ export const createJobSchema = z
 export const updateJobStatusSchema = z.object({
   status: jobStatusSchema,
 });
+
+export const claimTaskSchema = z
+  .object({
+    worker: iriSchema("workers"),
+  })
+  .transform(({ worker }) => ({
+    workerUuid: worker,
+  }));

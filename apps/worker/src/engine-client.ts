@@ -91,6 +91,24 @@ export class EngineClient {
     return response.json() as Promise<Task>;
   }
 
+  async claimTask(
+    workerId: string,
+  ): Promise<{ job: WorkerJob; task: Task } | null> {
+    const response = await fetch(`${this.engineUrl}/tasks/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ worker: `/workers/${workerId}` }),
+    });
+    if (response.status === 204) return null;
+    if (!response.ok) {
+      throw new Error(
+        `Failed to claim task: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json() as Promise<{ job: WorkerJob; task: Task }>;
+  }
+
   async updateTaskStatus(
     taskUuid: string,
     status: Task["status"],

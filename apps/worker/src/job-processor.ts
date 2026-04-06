@@ -63,6 +63,14 @@ export class JobProcessor {
     await this.engineClient.updateTaskStatus(task.uuid, "in_progress");
     jobLogger.debug({ taskId: task.uuid }, "Task marked as in_progress");
 
+    // Spawn agent (mock)
+    if (task.agentId) {
+      jobLogger.info(
+        { agentId: task.agentId, taskId: task.uuid },
+        "Spawning agent for task (mock)",
+      );
+    }
+
     // Placeholder: actual processing would happen here
     jobLogger.debug({ taskId: task.uuid }, "Task processing complete");
 

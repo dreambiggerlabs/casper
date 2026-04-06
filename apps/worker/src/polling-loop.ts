@@ -64,6 +64,10 @@ export class PollingLoop {
   private async poll(): Promise<void> {
     while (this.isRunning) {
       try {
+        // Phase 1: Try to claim an available task
+        await this.claimAvailableTask();
+
+        // Phase 2: Process already-assigned jobs
         const jobs = await this.engineClient.fetchPendingJobs(this.workerId);
         logger.debug(
           { workerId: this.workerId, jobCount: jobs.length },
@@ -76,6 +80,16 @@ export class PollingLoop {
         logger.error({ err: error, workerId: this.workerId }, "Polling error");
       }
       await this.sleep(POLL_INTERVAL_MS);
+    }
+  }
+
+  private async claimAvailableTask(): Promise<void> {
+    const result = await this.engineClient.claimTask(this.workerId);
+    if (result) {
+      logger.info(
+        { taskId: result.task.uuid, jobId: result.job.uuid },
+        "Claimed task, job created",
+      );
     }
   }
 

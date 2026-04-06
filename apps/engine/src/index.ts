@@ -41,7 +41,11 @@ const agentService = new AgentService(agentRepository);
 
 const workerRepository = new DrizzleWorkerRepository(db);
 const workerJobRepository = new DrizzleWorkerJobRepository(db);
-const workerService = new WorkerService(workerRepository, workerJobRepository);
+const workerService = new WorkerService(
+  workerRepository,
+  workerJobRepository,
+  db,
+);
 
 const taskRepository = new DrizzleTaskRepository(db);
 const taskService = new TaskService(
