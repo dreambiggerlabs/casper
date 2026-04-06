@@ -8,6 +8,8 @@ const HEARTBEAT_INTERVAL_MS = 30000;
 export class PollingLoop {
   private isRunning = false;
   private heartbeatIntervalId: ReturnType<typeof setInterval> | null = null;
+  private isBusy = false;
+  private lastIdleLog = 0;
 
   constructor(
     private readonly engineClient: EngineClient,
@@ -17,6 +19,7 @@ export class PollingLoop {
 
   start(): void {
     this.isRunning = true;
+    this.lastIdleLog = Date.now();
     logger.info({ workerId: this.workerId }, "Polling started");
 
     // Start heartbeat interval
@@ -69,12 +72,38 @@ export class PollingLoop {
 
         // Phase 2: Process already-assigned jobs
         const jobs = await this.engineClient.fetchPendingJobs(this.workerId);
-        logger.debug(
-          { workerId: this.workerId, jobCount: jobs.length },
-          "Fetched pending jobs",
-        );
-        for (const job of jobs) {
-          await this.jobProcessor.process(job);
+        const jobCount = jobs.length;
+
+        if (jobCount > 0) {
+          logger.info(
+            { workerId: this.workerId, jobCount },
+            "Fetched pending jobs",
+          );
+
+          // State transition: idle → busy
+          if (!this.isBusy) {
+            logger.info({ workerId: this.workerId }, "Worker state: idle → busy");
+            this.isBusy = true;
+          }
+
+          for (const job of jobs) {
+            await this.jobProcessor.process(job);
+          }
+        } else {
+          // State transition: busy → idle
+          if (this.isBusy) {
+            logger.info({ workerId: this.workerId }, "Worker state: busy → idle");
+            this.isBusy = false;
+            this.lastIdleLog = Date.now();
+            logger.debug({ workerId: this.workerId }, "Worker idle");
+          } else {
+            // Periodic idle log (every ~60s)
+            const now = Date.now();
+            if (now - this.lastIdleLog > 60_000) {
+              logger.debug({ workerId: this.workerId }, "Worker idle");
+              this.lastIdleLog = now;
+            }
+          }
         }
       } catch (error) {
         logger.error({ err: error, workerId: this.workerId }, "Polling error");
