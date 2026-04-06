@@ -89,9 +89,9 @@ Casper Engine acts as the orchestrator between developer intent (tasks) and work
 - Enforces clear architectural boundaries—domains communicate through shared contracts and domain services, not direct internal type imports.
 - Establishes a highly predictable pattern for both human and AI contributors to navigate the repository.
 
-### 3.6 Zod & AJV Dual Validation
-**Decision:** Zod is used for primary internal validation while AJV runs JSON Schema validation.
-**Why:** Zod provides seamless TypeScript inference out-of-the-box for domain logic. Conversely, AJV ensures strict conformance to JSON Schema standards, which is necessary for precise OpenAPI documentation, webhook payloads, and external configuration parsing.
+### 3.6 Zod Validation
+**Decision:** Zod is used for all runtime validation.
+**Why:** Zod provides seamless TypeScript inference out-of-the-box for domain logic, keeping validation schemas and types in sync with zero duplication. A single validation library reduces cognitive overhead and dependency surface.
 
 ---
 

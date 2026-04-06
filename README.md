@@ -16,9 +16,9 @@ It bridges the gap between developer intent and working code. You describe what 
 
 Behind the scenes, Casper Engine acts like your own team of **AI ghost producers** — quietly turning tasks and ideas into working code while you stay focused on the bigger picture.
 
-The goal of Casper Engine is to provide a **powerful backend engine** that developers can build their own interfaces on top of. Whether you want a simple Kanban-style task board, a chat-based interface, or a full **Replit-like development environment**, Casper Engine provides the infrastructure to make it possible.
+The goal of Casper Engine is to provide a **powerful backend engine** that developers can build their own interfaces on top of. Whether you want a simple Kanban-style task board, a chat-based interface, or a full browser-based development environment, Casper Engine provides the infrastructure to make it possible.
 
-Casper Engine is built as a **standalone API** — it does not ship with or depend on any frontend. The entire focus is on delivering a rock-solid agentic coding engine: task orchestration, agent execution, validation pipelines, and integrations. Bring your own UI, or use one of the community or first-party frontends that build on top of the API.
+Casper Engine is built **API-first** — the entire focus is on delivering a rock-solid agentic coding engine: task orchestration, agent execution, validation pipelines, and integrations. While Casper ships with its own frontend, the API is the primary interface. Bring your own UI, or use one of the community or first-party frontends that build on top of the API.
 
 No context switching. No boilerplate. Just working code.
 
@@ -64,7 +64,7 @@ Casper Engine is designed as the **core infrastructure layer** for agent-driven 
 The engine itself focuses on orchestration, agents, execution environments, and task pipelines. On top of this engine, multiple interfaces and products will be built.
 
 - **Casper Engine** — the open source orchestration engine and agent platform
-- **Casper Studio** — a full browser-based development environment combining the best of Replit, Paperclip, and Cline — available as an open source Community Edition or a managed hosted edition
+- **Casper Studio** — a full browser-based development environment for agentic coding — available as an open source Community Edition or a managed hosted edition
 
 Because Casper Engine exposes its functionality through APIs and workers, developers can also build **their own custom frontends and workflows** on top of it.
 

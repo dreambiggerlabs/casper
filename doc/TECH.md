@@ -18,7 +18,6 @@ Technology choices for the Casper Engine.
 | Database | [PostgreSQL](https://www.postgresql.org/) | Installed | Task state, job queue, execution logs, events |
 | ORM | [Drizzle ORM](https://orm.drizzle.team/) | Installed | Type-safe SQL, schema declarations, migrations |
 | Validation | [Zod 4.x](https://zod.dev/) | Installed | Runtime schema validation and type inference |
-| Validation (JSON Schema) | [AJV](https://ajv.js.org/) | Planned | JSON Schema validation for API payloads and config |
 | Logging | [Pino](https://getpino.io/) | Installed | Structured JSON logging, low-overhead |
 | API Docs | [Swagger/OpenAPI](https://swagger.io/) + [Scalar](https://scalar.com/) | Installed | OpenAPI spec generation with Scalar API reference UI |
 | Docker SDK | [dockerode](https://github.com/apocas/dockerode) | Planned | Container lifecycle management for agent execution |
@@ -44,10 +43,7 @@ Schema is managed through **Drizzle ORM** — type-safe table declarations in Ty
 
 ## Validation Strategy
 
-Two complementary validators are used:
-
-* **Zod 4.x** — primary validation for request bodies, service inputs, and internal data contracts. Provides TypeScript type inference directly from schemas.
-* **AJV** — JSON Schema validation for cases requiring standards-based schema interchange (webhook payloads, external config files, OpenAPI request validation).
+**Zod 4.x** is used for all runtime validation — request bodies, service inputs, and internal data contracts. Zod provides TypeScript type inference directly from schemas, keeping validation and types in sync.
 
 ---
 
