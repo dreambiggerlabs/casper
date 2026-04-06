@@ -54,7 +54,10 @@ export class PollingLoop {
       await this.engineClient.heartbeat(this.workerId);
       logger.debug({ workerId: this.workerId }, "Heartbeat sent");
     } catch (error) {
-      logger.error({ err: error, workerId: this.workerId }, "Failed to send heartbeat");
+      logger.error(
+        { err: error, workerId: this.workerId },
+        "Failed to send heartbeat",
+      );
     }
   }
 
@@ -62,7 +65,10 @@ export class PollingLoop {
     while (this.isRunning) {
       try {
         const jobs = await this.engineClient.fetchPendingJobs(this.workerId);
-        logger.debug({ workerId: this.workerId, jobCount: jobs.length }, "Fetched pending jobs");
+        logger.debug(
+          { workerId: this.workerId, jobCount: jobs.length },
+          "Fetched pending jobs",
+        );
         for (const job of jobs) {
           await this.jobProcessor.process(job);
         }

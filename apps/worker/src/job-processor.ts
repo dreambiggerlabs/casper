@@ -54,7 +54,10 @@ export class JobProcessor {
     }
 
     const task = await this.engineClient.getTask(job.taskId);
-    jobLogger.info({ taskId: task.uuid, taskTitle: task.title }, "Executing task");
+    jobLogger.info(
+      { taskId: task.uuid, taskTitle: task.title },
+      "Executing task",
+    );
 
     // Mark task as in_progress
     await this.engineClient.updateTaskStatus(task.uuid, "in_progress");
