@@ -5,6 +5,7 @@ import { apiReference } from "@scalar/express-api-reference";
 
 import { db } from "./shared/database/index.js";
 import { errorHandler } from "./shared/middleware/error-handler.js";
+import { logger } from "./shared/logging/logger.js";
 import { openApiSpec } from "./shared/openapi/index.js";
 
 import { DrizzleProjectRepository } from "./project/project.repository.js";
@@ -75,5 +76,5 @@ app.get("/health", (_request, response) => {
 app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(`Casper Engine listening on port ${port}`);
+  logger.info({ port }, "Casper Engine listening");
 });

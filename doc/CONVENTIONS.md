@@ -73,9 +73,13 @@ Core bounded contexts in Casper Engine:
 
 * **Tasks** — task lifecycle, state transitions, priority, assignment
 * **Agents** — agent configuration, skills, model routing, execution
+* **Workers** — worker registration, heartbeat, job polling, capacity
+* **Projects** — project configuration and metadata
+
+Planned for future phases:
+
 * **Pipeline** — validation steps, linting, testing, build verification
 * **Integrations** — GitHub, GitLab, Slack adapters and webhook handling
-* **Workers** — worker registration, heartbeat, job polling, capacity
 
 ### Module Structure
 
@@ -89,16 +93,10 @@ src/
 │   ├── error/                 # base error classes
 │   ├── middleware/             # auth, logging, error handling
 │   └── type/                  # shared types, utility types
-├── task/
-│   ├── task.schema.ts         # Drizzle table + Zod schemas
-│   ├── task.repository.ts     # data access
-│   ├── task.service.ts        # business logic
-│   ├── task.routes.ts         # HTTP handlers
-│   └── task.types.ts          # domain types and interfaces
-├── agent/
-├── pipeline/
-├── integration/
-└── worker/
+├── task/                      # task domain
+├── agent/                     # agent domain
+├── worker/                    # worker domain
+└── project/                   # project domain
 ```
 
 `src/shared/` contains code used across multiple domains — database utilities, base middleware, common types. It has **no domain logic**.
