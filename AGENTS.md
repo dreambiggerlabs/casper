@@ -4,8 +4,20 @@ Guidance for human and AI contributors working in this repository.
 
 ## 1. Purpose
 
-Paperclip is a control plane for AI-agent companies.
-The current implementation target is V1 and is defined in `doc/SPEC-implementation.md`.
+**Casper Engine** is an agentic coding engine that turns tasks into validated pull requests.
+
+The current implementation target is **Phase 1 — Core Engine (MVP)** as defined in `ROADMAP.md`. This phase focuses on building a reliable agentic development loop:
+
+```
+Task
+ → Agent execution
+ → Validation pipeline
+ → Pull request
+ → Review feedback
+ → Agent refinement
+```
+
+Phase 1 establishes the foundational workflow using a single agent per task. All contributions should align with this scope: task ingestion, worker system, agent execution, git workflow automation, and validation pipeline.
 
 ## 2. Read This First
 
@@ -80,25 +92,25 @@ All code contributions must pass automated quality checks.
 
 Run these before committing:
 
-| Check | Command | Purpose |
-|---|---|---|
-| Type check | `npm run typecheck` | Catches type errors |
-| Lint | `npm run lint` | Enforces code quality |
-| Format | `npm run format:check` | Ensures consistent style |
-| Test | `npm test` | Verifies behaviour |
-| Audit | `npm audit` | Security vulnerability check |
+| Check      | Command                | Purpose                      |
+| ---------- | ---------------------- | ---------------------------- |
+| Type check | `npm run typecheck`    | Catches type errors          |
+| Lint       | `npm run lint`         | Enforces code quality        |
+| Format     | `npm run format:check` | Ensures consistent style     |
+| Test       | `npm test`             | Verifies behaviour           |
+| Audit      | `npm audit`            | Security vulnerability check |
 
 ### Pre-commit Enforcement
 
-Pre-commit hooks run automatically via lefthook:
+Run these checks before committing:
 
-- **Formatting** — Prettier validates style
-- **Linting** — ESLint catches issues
-- **Type checking** — TypeScript verifies types
-- **Tests** — Vitest runs affected tests
-- **Audit** — npm audit checks for vulnerabilities
+- **Formatting** — `npm run format:check` validates style
+- **Linting** — `npm run lint` catches issues
+- **Type checking** — `npm run typecheck` verifies types
+- **Tests** — `npm test` runs affected tests
+- **Audit** — `npm audit` checks for vulnerabilities
 
-Failed checks block the commit. Fix issues before committing.
+Failed checks must be fixed before committing.
 
 ### CI Requirements
 
@@ -159,14 +171,14 @@ All secrets and sensitive configuration must be provided via **environment varia
 
 ```typescript
 // ✗ Bad — hardcoded secret fallback
-const apiKey = process.env.OPENAI_API_KEY ?? 'sk-real-key-here';
+const apiKey = process.env.OPENAI_API_KEY ?? "sk-real-key-here";
 
 // ✗ Bad — secret in source code
-const jwtSecret = 'my-super-secret-key';
+const jwtSecret = "my-super-secret-key";
 
 // ✓ Good — fail if missing
 const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is required');
+if (!apiKey) throw new Error("OPENAI_API_KEY environment variable is required");
 ```
 
 ### Encrypted Storage for Sensitive Data

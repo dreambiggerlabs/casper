@@ -12,21 +12,21 @@ Technology choices for the Casper Engine.
 
 ## Core Libraries
 
-| Layer | Technology | Notes |
-|---|---|---|
-| HTTP Framework | [Express.js](https://expressjs.com/) | Routing, middleware, request handling |
-| Database | [PostgreSQL](https://www.postgresql.org/) | Task state, job queue, execution logs, events |
-| ORM | [Drizzle ORM](https://orm.drizzle.team/) | Type-safe SQL, schema declarations, migrations |
-| Validation | [Zod 4.x](https://zod.dev/) | Runtime schema validation and type inference |
-| Validation (JSON Schema) | [AJV](https://ajv.js.org/) | JSON Schema validation for API payloads and config |
-| Logging | [Pino](https://getpino.io/) | Structured JSON logging, low-overhead |
-| API Docs | [Swagger/OpenAPI](https://swagger.io/) + [Scalar](https://scalar.com/) | OpenAPI spec generation with Scalar API reference UI |
-| Docker SDK | [dockerode](https://github.com/apocas/dockerode) | Container lifecycle management |
-| Git | [simple-git](https://github.com/steveukx/git-js) | Git operations (branch, commit, push) |
-| WebSocket | [ws](https://github.com/websockets/ws) | Real-time worker communication, interactive mode |
-| LLM Integration | HTTP client + streaming JSON | OpenAI-compatible API |
-| Config | Environment variables + [dotenv](https://github.com/motdotla/dotenv) | 12-factor compliant |
-| Testing | [Vitest](https://vitest.dev/) | Fast TypeScript-native test runner |
+| Layer | Technology | Status | Notes |
+|---|---|---|---|
+| HTTP Framework | [Express.js](https://expressjs.com/) | Installed | Routing, middleware, request handling |
+| Database | [PostgreSQL](https://www.postgresql.org/) | Installed | Task state, job queue, execution logs, events |
+| ORM | [Drizzle ORM](https://orm.drizzle.team/) | Installed | Type-safe SQL, schema declarations, migrations |
+| Validation | [Zod 4.x](https://zod.dev/) | Installed | Runtime schema validation and type inference |
+| Validation (JSON Schema) | [AJV](https://ajv.js.org/) | Planned | JSON Schema validation for API payloads and config |
+| Logging | [Pino](https://getpino.io/) | Planned | Structured JSON logging, low-overhead |
+| API Docs | [Swagger/OpenAPI](https://swagger.io/) + [Scalar](https://scalar.com/) | Installed | OpenAPI spec generation with Scalar API reference UI |
+| Docker SDK | [dockerode](https://github.com/apocas/dockerode) | Planned | Container lifecycle management for agent execution |
+| Git | [simple-git](https://github.com/steveukx/git-js) | Planned | Git operations (branch, commit, push) |
+| WebSocket | [ws](https://github.com/websockets/ws) | Planned | Real-time worker communication, interactive mode |
+| LLM Integration | HTTP client + streaming JSON | Planned | OpenAI-compatible API |
+| Config | Environment variables + [dotenv](https://github.com/motdotla/dotenv) | Installed | 12-factor compliant |
+| Testing | [Vitest](https://vitest.dev/) | Installed | Fast TypeScript-native test runner |
 
 ---
 
