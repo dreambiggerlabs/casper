@@ -5,6 +5,7 @@ import { EngineClient } from "./engine-client.js";
 import { JobProcessor } from "./job-processor.js";
 import { PollingLoop } from "./polling-loop.js";
 import { loadWorkerState, saveWorkerState } from "./worker-state.js";
+import { logger } from "./logging/logger.js";
 
 const ENGINE_URL = process.env["ENGINE_URL"];
 const WORKER_NAME =
@@ -22,7 +23,7 @@ async function main(): Promise<void> {
 
   if (!workerState) {
     // Register a new worker
-    console.log(`[Worker] Registering new worker with name: ${WORKER_NAME}`);
+    logger.info({ workerName: WORKER_NAME }, "Registering new worker");
     const worker = await engineClient.registerWorker(WORKER_NAME);
     workerState = {
       workerId: worker.uuid,
@@ -30,9 +31,9 @@ async function main(): Promise<void> {
       name: worker.name,
     };
     await saveWorkerState(workerState);
-    console.log(`[Worker] Registered with ID: ${workerState.workerId}`);
+    logger.info({ workerId: workerState.workerId }, "Worker registered");
   } else {
-    console.log(`[Worker] Using existing worker ID: ${workerState.workerId}`);
+    logger.info({ workerId: workerState.workerId }, "Using existing worker");
     // Send initial heartbeat to confirm worker exists
     await engineClient.heartbeat(workerState.workerId);
   }
@@ -48,6 +49,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error("[Worker] Fatal error:", error);
+  logger.fatal({ err: error }, "Fatal error");
   process.exit(1);
 });

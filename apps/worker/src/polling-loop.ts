@@ -1,3 +1,4 @@
+import { logger } from "./logging/logger.js";
 import type { EngineClient } from "./engine-client.js";
 import type { JobProcessor } from "./job-processor.js";
 
@@ -16,7 +17,7 @@ export class PollingLoop {
 
   start(): void {
     this.isRunning = true;
-    console.log(`[Worker] Polling started for worker ${this.workerId}`);
+    logger.info({ workerId: this.workerId }, "Polling started");
 
     // Start heartbeat interval
     this.startHeartbeat();
@@ -28,7 +29,7 @@ export class PollingLoop {
   stop(): void {
     this.isRunning = false;
     this.stopHeartbeat();
-    console.log("[Worker] Polling stopped");
+    logger.info("Polling stopped");
   }
 
   private startHeartbeat(): void {
@@ -51,8 +52,9 @@ export class PollingLoop {
   private async sendHeartbeat(): Promise<void> {
     try {
       await this.engineClient.heartbeat(this.workerId);
+      logger.debug({ workerId: this.workerId }, "Heartbeat sent");
     } catch (error) {
-      console.error("[Worker] Failed to send heartbeat:", error);
+      logger.error({ err: error, workerId: this.workerId }, "Failed to send heartbeat");
     }
   }
 
@@ -60,11 +62,12 @@ export class PollingLoop {
     while (this.isRunning) {
       try {
         const jobs = await this.engineClient.fetchPendingJobs(this.workerId);
+        logger.debug({ workerId: this.workerId, jobCount: jobs.length }, "Fetched pending jobs");
         for (const job of jobs) {
           await this.jobProcessor.process(job);
         }
       } catch (error) {
-        console.error("[Worker] Polling error:", error);
+        logger.error({ err: error, workerId: this.workerId }, "Polling error");
       }
       await this.sleep(POLL_INTERVAL_MS);
     }

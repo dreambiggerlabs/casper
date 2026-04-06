@@ -19,7 +19,7 @@ Technology choices for the Casper Engine.
 | ORM | [Drizzle ORM](https://orm.drizzle.team/) | Installed | Type-safe SQL, schema declarations, migrations |
 | Validation | [Zod 4.x](https://zod.dev/) | Installed | Runtime schema validation and type inference |
 | Validation (JSON Schema) | [AJV](https://ajv.js.org/) | Planned | JSON Schema validation for API payloads and config |
-| Logging | [Pino](https://getpino.io/) | Planned | Structured JSON logging, low-overhead |
+| Logging | [Pino](https://getpino.io/) | Installed | Structured JSON logging, low-overhead |
 | API Docs | [Swagger/OpenAPI](https://swagger.io/) + [Scalar](https://scalar.com/) | Installed | OpenAPI spec generation with Scalar API reference UI |
 | Docker SDK | [dockerode](https://github.com/apocas/dockerode) | Planned | Container lifecycle management for agent execution |
 | Git | [simple-git](https://github.com/steveukx/git-js) | Planned | Git operations (branch, commit, push) |
