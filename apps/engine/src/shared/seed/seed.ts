@@ -32,7 +32,10 @@ async function seed() {
     title: "Infrastructure",
     description: "DevOps and platform tooling",
   });
-  logger.info({ projects: [webApp.uuid, infrastructure.uuid] }, "Created projects");
+  logger.info(
+    { projects: [webApp.uuid, infrastructure.uuid] },
+    "Created projects",
+  );
 
   // Agents
   const coder = await createAgent(db, { name: "Coder" });

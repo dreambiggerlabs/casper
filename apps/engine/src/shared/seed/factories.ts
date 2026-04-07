@@ -35,6 +35,7 @@ export async function createProject(
   overrides: { title?: string; description?: string } = {},
 ): Promise<Project> {
   const repo = new DrizzleProjectRepository(db);
+
   return repo.create({
     title: overrides.title ?? `Project ${nextId()}`,
     description: overrides.description,
@@ -46,6 +47,7 @@ export async function createAgent(
   overrides: { name?: string } = {},
 ): Promise<Agent> {
   const repo = new DrizzleAgentRepository(db);
+
   return repo.create({
     name: overrides.name ?? `Agent ${nextId()}`,
   });
@@ -88,6 +90,7 @@ export async function createWorker(
   overrides: { name?: string; token?: string } = {},
 ): Promise<Worker> {
   const repo = new DrizzleWorkerRepository(db);
+
   return repo.create({
     name: overrides.name ?? `Worker ${nextId()}`,
     token: overrides.token ?? randomBytes(32).toString("hex"),
@@ -103,6 +106,7 @@ export async function createJob(
   },
 ): Promise<WorkerJob> {
   const repo = new DrizzleWorkerJobRepository(db);
+
   return repo.createJob(overrides.workerId, {
     type: overrides.type ?? "execute_task",
     taskId: overrides.taskId,
