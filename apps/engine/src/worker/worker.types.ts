@@ -12,7 +12,7 @@ export type JobType =
   | "cleanup"
   | "start_preview"
   | "stop_preview";
-export type JobStatus = "pending" | "in_progress" | "completed" | "failed";
+export type JobStatus = "ready" | "in_progress" | "completed" | "failed";
 
 export interface Worker {
   "@id": string;
@@ -32,6 +32,7 @@ export interface WorkerJob {
   type: JobType;
   status: JobStatus;
   task: string | null;
+  failReason: string | null;
   createdAt: Date;
   updatedAt: Date | null;
 }
@@ -78,11 +79,12 @@ export interface WorkerJobReader {
 export interface WorkerJobWriter {
   createJob(
     workerId: string,
-    data: { type: string; taskId?: string },
+    data: { type: JobType; taskId?: string },
   ): Promise<WorkerJob>;
   updateJobStatus(
     uuid: string,
     status: JobStatus,
+    failReason?: string,
   ): Promise<WorkerJob | undefined>;
 }
 

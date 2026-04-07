@@ -146,6 +146,7 @@ export class WorkerService {
     const updated = await this.workerJobRepository.updateJobStatus(
       uuid,
       parsed.data.status,
+      parsed.data.failReason,
     );
     if (!updated) {
       throw new NotFoundError("Job", uuid);
@@ -201,7 +202,7 @@ export class WorkerService {
     return this.database.transaction(async (tx) => {
       // Find and lock an available task (assigned but not yet claimed)
       const rows = await tx.execute<Record<string, unknown>>(
-        sql`SELECT * FROM task WHERE status = 'assigned' ORDER BY created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED`,
+        sql`SELECT * FROM task WHERE status = 'ready' AND agent_id IS NOT NULL ORDER BY created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED`,
       );
       const taskRow = rows[0];
       if (!taskRow) return null;
@@ -222,10 +223,10 @@ export class WorkerService {
         throw new Error("Failed to create job");
       }
 
-      // Transition task to 'processing'
+      // Transition task to 'in_progress'
       const taskRows = await tx
         .update(task)
-        .set({ status: "processing", updatedAt: new Date() })
+        .set({ status: "in_progress", updatedAt: new Date() })
         .where(eq(task.uuid, taskUuid))
         .returning();
       const updatedTaskRow = taskRows[0];
@@ -256,6 +257,7 @@ export class WorkerService {
         type: jobRow.type as WorkerJob["type"],
         status: jobRow.status as JobStatus,
         task: jobRow.taskId ? toIri("tasks", jobRow.taskId) : null,
+        failReason: jobRow.failReason,
         createdAt: jobRow.createdAt,
         updatedAt: jobRow.updatedAt,
       };

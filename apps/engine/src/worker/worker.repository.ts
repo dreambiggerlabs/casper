@@ -1,4 +1,4 @@
-import { eq, and, count as drizzleCount } from "drizzle-orm";
+import { eq, ne, and, count as drizzleCount } from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
@@ -10,6 +10,7 @@ import type {
   WorkerRepository,
   WorkerJobRepository,
   WorkerStatus,
+  JobType,
   JobStatus,
 } from "./worker.types.js";
 
@@ -19,7 +20,7 @@ function toWorker(row: typeof worker.$inferSelect): Worker {
     uuid: row.uuid,
     name: row.name,
     token: row.token,
-    status: row.status as WorkerStatus,
+    status: row.status,
     lastHeartbeatAt: row.lastHeartbeatAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -31,9 +32,10 @@ function toWorkerJob(row: typeof workerJob.$inferSelect): WorkerJob {
     "@id": toIri("jobs", row.uuid),
     uuid: row.uuid,
     worker: toIri("workers", row.workerId),
-    type: row.type as WorkerJob["type"],
-    status: row.status as JobStatus,
+    type: row.type,
+    status: row.status,
     task: row.taskId ? toIri("tasks", row.taskId) : null,
+    failReason: row.failReason,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -156,7 +158,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     const rows = await this.database
       .select()
       .from(workerJob)
-      .where(eq(workerJob.taskId, taskId));
+      .where(and(eq(workerJob.taskId, taskId), ne(workerJob.status, "failed")));
     const row = rows[0];
 
     return row ? toWorkerJob(row) : undefined;
@@ -198,7 +200,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
 
   async createJob(
     workerId: string,
-    data: { type: string; taskId?: string },
+    data: { type: JobType; taskId?: string },
   ): Promise<WorkerJob> {
     const rows = await this.database
       .insert(workerJob)
@@ -215,10 +217,11 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   async updateJobStatus(
     uuid: string,
     status: JobStatus,
+    failReason?: string,
   ): Promise<WorkerJob | undefined> {
     const rows = await this.database
       .update(workerJob)
-      .set({ status, updatedAt: new Date() })
+      .set({ status, failReason: failReason ?? null, updatedAt: new Date() })
       .where(eq(workerJob.uuid, uuid))
       .returning();
     const row = rows[0];

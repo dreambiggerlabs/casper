@@ -38,30 +38,42 @@ export class JobProcessor {
       await this.engineClient.updateJobStatus(job.uuid, "completed");
       jobLogger.info("Job completed");
     } catch (error) {
-      // Mark as failed
-      await this.engineClient.updateJobStatus(job.uuid, "failed");
+      // Mark job as failed with reason
+      const failReason = error instanceof Error ? error.message : String(error);
+      await this.engineClient.updateJobStatus(job.uuid, "failed", failReason);
+
+      // Release task back to ready so it can be retried
+      if (job.task) {
+        const taskUuid = this.parseIri(job.task);
+        await this.engineClient.updateTaskStatus(taskUuid, "ready");
+        jobLogger.info({ taskId: taskUuid }, "Task released for retry");
+      }
+
       jobLogger.error({ err: error }, "Job failed");
       throw error;
     }
+  }
+
+  private parseIri(iri: string): string {
+    const parts = iri.split("/");
+
+    return parts[parts.length - 1] ?? iri;
   }
 
   private async processExecuteTask(
     job: WorkerJob,
     jobLogger: Logger,
   ): Promise<void> {
-    if (!job.taskId) {
-      throw new Error("execute_task job must have a taskId");
+    if (!job.task) {
+      throw new Error("execute_task job must have a task");
     }
 
-    const task = await this.engineClient.getTask(job.taskId);
+    const taskUuid = this.parseIri(job.task);
+    const task = await this.engineClient.getTask(taskUuid);
     jobLogger.info(
       { taskId: task.uuid, taskTitle: task.title },
       "Executing task",
     );
-
-    // Mark task as in_progress
-    await this.engineClient.updateTaskStatus(task.uuid, "in_progress");
-    jobLogger.debug({ taskId: task.uuid }, "Task marked as in_progress");
 
     // Spawn agent (mock)
     if (task.agentId) {
@@ -74,9 +86,9 @@ export class JobProcessor {
     // Placeholder: actual processing would happen here
     jobLogger.debug({ taskId: task.uuid }, "Task processing complete");
 
-    // Mark task as completed
-    await this.engineClient.updateTaskStatus(task.uuid, "completed");
-    jobLogger.debug({ taskId: task.uuid }, "Task marked as completed");
+    // Move task to review for human verification
+    await this.engineClient.updateTaskStatus(task.uuid, "review");
+    jobLogger.debug({ taskId: task.uuid }, "Task moved to review");
   }
 
   private async processCleanup(

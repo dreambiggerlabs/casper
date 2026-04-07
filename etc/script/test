@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+
+usage() {
+  echo "Usage: ./etc/script/test [unit|integration|e2e|all] [engine|worker]"
+  echo ""
+  echo "Examples:"
+  echo "  ./etc/script/test              # run all tests for all apps"
+  echo "  ./etc/script/test unit         # unit tests for all apps"
+  echo "  ./etc/script/test integration  # integration tests for all apps"
+  echo "  ./etc/script/test e2e          # e2e tests for all apps"
+  echo "  ./etc/script/test all engine   # all tests for engine only"
+  echo "  ./etc/script/test unit worker  # unit tests for worker only"
+}
+
+TYPE="${1:-all}"
+APP="${2:-}"
+
+run_tests() {
+  local app="$1"
+  local type="$2"
+
+  case "$type" in
+    unit)        docker compose exec "$app" sh -c "npm test" ;;
+    integration) docker compose exec "$app" sh -c "npm run test:integration" ;;
+    e2e)         docker compose exec "$app" sh -c "npm run test:e2e" ;;
+    all)         docker compose exec "$app" sh -c "npm run test:all" ;;
+    *)           echo "Unknown test type: $type"; usage; exit 1 ;;
+  esac
+}
+
+if [[ "$TYPE" == "-h" || "$TYPE" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ -n "$APP" ]]; then
+  echo "==> Running $TYPE tests for $APP"
+  run_tests "$APP" "$TYPE"
+else
+  echo "==> Running $TYPE tests for engine"
+  run_tests "engine" "$TYPE"
+  echo ""
+  echo "==> Running $TYPE tests for worker"
+  run_tests "worker" "$TYPE"
+fi

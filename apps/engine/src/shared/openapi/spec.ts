@@ -405,7 +405,7 @@ export const openApiSpec = {
             description: "Filter by job status",
             schema: {
               type: "string",
-              enum: ["pending", "in_progress", "completed", "failed"],
+              enum: ["ready", "in_progress", "completed", "failed"],
             },
           },
           { $ref: "#/components/parameters/page" },
@@ -565,13 +565,7 @@ export const openApiSpec = {
             description: "Filter by task status",
             schema: {
               type: "string",
-              enum: [
-                "pending",
-                "assigned",
-                "processing",
-                "in_progress",
-                "completed",
-              ],
+              enum: ["backlog", "ready", "in_progress", "review", "completed"],
             },
           },
           {
@@ -999,7 +993,7 @@ export const openApiSpec = {
           },
           status: {
             type: "string",
-            enum: ["pending", "in_progress", "completed", "failed"],
+            enum: ["ready", "in_progress", "completed", "failed"],
           },
           task: {
             type: ["string", "null"],
@@ -1033,7 +1027,7 @@ export const openApiSpec = {
         properties: {
           status: {
             type: "string",
-            enum: ["pending", "in_progress", "completed", "failed"],
+            enum: ["ready", "in_progress", "completed", "failed"],
           },
         },
       },
@@ -1065,13 +1059,7 @@ export const openApiSpec = {
           },
           status: {
             type: "string",
-            enum: [
-              "pending",
-              "assigned",
-              "processing",
-              "in_progress",
-              "completed",
-            ],
+            enum: ["backlog", "ready", "in_progress", "review", "completed"],
           },
           agent: {
             type: ["string", "null"],
@@ -1134,13 +1122,7 @@ export const openApiSpec = {
         properties: {
           status: {
             type: "string",
-            enum: [
-              "pending",
-              "assigned",
-              "processing",
-              "in_progress",
-              "completed",
-            ],
+            enum: ["backlog", "ready", "in_progress", "review", "completed"],
           },
         },
       },

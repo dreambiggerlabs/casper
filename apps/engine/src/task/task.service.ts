@@ -162,12 +162,6 @@ export class TaskService {
       throw new NotFoundError("Task", taskUuid);
     }
 
-    if (task.status !== "pending") {
-      throw new ValidationError("Task is not in pending status", [
-        { field: "status", message: "Only pending tasks can be assigned" },
-      ]);
-    }
-
     const agent = await this.agentReader.findByUuid(parsed.data.agentId);
     if (!agent) {
       throw new NotFoundError("Agent", parsed.data.agentId);

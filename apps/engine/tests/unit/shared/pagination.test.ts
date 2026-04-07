@@ -78,7 +78,7 @@ describe("createHydraCollection", () => {
       page: 1,
       itemsPerPage: 10,
       basePath: "/tasks",
-      extraParams: { status: "pending", agent: "/agents/some-uuid" },
+      extraParams: { status: "ready", agent: "/agents/some-uuid" },
     });
 
     expect(result.view?.["@id"]).toContain("status=pending");

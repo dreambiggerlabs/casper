@@ -51,7 +51,7 @@ export function createWorkerRoutes(service: WorkerService): Router {
   router.get("/jobs", async (request, response) => {
     const workerIri = request.query["worker"]?.toString();
     const status = request.query["status"]?.toString() as
-      | "pending"
+      | "ready"
       | "in_progress"
       | "completed"
       | "failed"

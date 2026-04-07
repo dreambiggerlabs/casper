@@ -19,7 +19,7 @@ function toTask(row: typeof task.$inferSelect): Task {
     title: row.title,
     project: toIri("projects", row.projectId),
     parent: row.parentId ? toIri("tasks", row.parentId) : null,
-    status: row.status as TaskStatus,
+    status: row.status,
     agent: row.agentId ? toIri("agents", row.agentId) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -133,7 +133,7 @@ export class DrizzleTaskRepository implements TaskRepository {
   async assign(uuid: string, agentId: string): Promise<Task | undefined> {
     const rows = await this.database
       .update(task)
-      .set({ agentId, status: "assigned", updatedAt: new Date() })
+      .set({ agentId, updatedAt: new Date() })
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];

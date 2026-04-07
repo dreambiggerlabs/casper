@@ -1,8 +1,8 @@
 export type TaskStatus =
-  | "pending"
-  | "assigned"
-  | "processing"
+  | "backlog"
+  | "ready"
   | "in_progress"
+  | "review"
   | "completed";
 export type WorkerStatus = "active" | "inactive";
 export type JobType =
@@ -10,7 +10,7 @@ export type JobType =
   | "cleanup"
   | "start_preview"
   | "stop_preview";
-export type JobStatus = "pending" | "in_progress" | "completed" | "failed";
+export type JobStatus = "ready" | "in_progress" | "completed" | "failed";
 
 export interface Task {
   uuid: string;
@@ -31,10 +31,11 @@ export interface Worker {
 
 export interface WorkerJob {
   uuid: string;
-  workerId: string;
+  worker: string;
   type: JobType;
   status: JobStatus;
-  taskId: string | null;
+  task: string | null;
+  failReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

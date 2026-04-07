@@ -25,6 +25,44 @@ jobs:
       - name: Run checks
         run: npm run check --workspace=@casper/engine
 
+  engine-integration:
+    name: Engine Integration & E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: casper
+          POSTGRES_USER: casper
+          POSTGRES_PASSWORD: casper
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U casper -d casper"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 10
+          --health-start-period 5s
+    env:
+      DATABASE_TEST_URL: postgresql://casper:casper@localhost:5432/casper_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration --workspace=@casper/engine
+
+      - name: Run E2E tests
+        run: npm run test:e2e --workspace=@casper/engine
+
   studio:
     name: Studio Checks
     runs-on: ubuntu-latest
@@ -60,3 +98,41 @@ jobs:
 
       - name: Run checks
         run: npm run check --workspace=@casper/worker
+
+  worker-integration:
+    name: Worker Integration & E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: casper
+          POSTGRES_USER: casper
+          POSTGRES_PASSWORD: casper
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U casper -d casper"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 10
+          --health-start-period 5s
+    env:
+      DATABASE_TEST_URL: postgresql://casper:casper@localhost:5432/casper_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration --workspace=@casper/worker
+
+      - name: Run E2E tests
+        run: npm run test:e2e --workspace=@casper/worker

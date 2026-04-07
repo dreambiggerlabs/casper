@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   serial,
   uuid,
   varchar,
@@ -12,13 +13,17 @@ import { project } from "../project/project.schema.js";
 import { agent } from "../agent/agent.schema.js";
 import { iriSchema, nullableIriSchema } from "../shared/iri/index.js";
 
-export const taskStatusSchema = z.enum([
-  "pending",
-  "assigned",
-  "processing",
+export const taskStatusValues = [
+  "backlog",
+  "ready",
   "in_progress",
+  "review",
   "completed",
-]);
+] as const;
+
+export const taskStatusEnum = pgEnum("task_status", taskStatusValues);
+
+export const taskStatusSchema = z.enum(taskStatusValues);
 
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
@@ -30,7 +35,7 @@ export const task = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     projectId: uuid("project_id").notNull(),
     parentId: uuid("parent_id"),
-    status: varchar("status", { length: 50 }).notNull().default("pending"),
+    status: taskStatusEnum().notNull().default("backlog"),
     agentId: uuid("agent_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

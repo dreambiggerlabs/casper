@@ -53,7 +53,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     title: "Test Task",
     project: `/projects/${PROJECT_UUID}`,
     parent: null,
-    status: "pending",
+    status: "backlog",
     agent: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
@@ -232,7 +232,7 @@ describe("TaskService", () => {
     it("should return paginated tasks filtered by status and agentId", async () => {
       const taskRepository = createMockTaskRepository();
       const tasks = [
-        makeTask({ status: "assigned", agent: `/agents/${AGENT_UUID}` }),
+        makeTask({ status: "ready", agent: `/agents/${AGENT_UUID}` }),
       ];
       vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
       vi.mocked(taskRepository.count).mockResolvedValue(1);
@@ -243,7 +243,7 @@ describe("TaskService", () => {
         createMockAgentReader(),
       );
       const result = await service.listTasks(
-        { status: "assigned", agentId: AGENT_UUID },
+        { status: "ready", agentId: AGENT_UUID },
         pagination,
       );
 
@@ -251,7 +251,7 @@ describe("TaskService", () => {
       expect(taskRepository.findPaginated).toHaveBeenCalledWith({
         limit: 30,
         offset: 0,
-        status: "assigned",
+        status: "ready",
         agentId: AGENT_UUID,
       });
     });
@@ -405,13 +405,13 @@ describe("TaskService", () => {
   });
 
   describe("assignTask", () => {
-    it("should assign an agent to a pending task", async () => {
+    it("should assign an agent to a task without changing status", async () => {
       const taskRepository = createMockTaskRepository();
       const agentReader = createMockAgentReader();
-      const pendingTask = makeTask({ status: "pending" });
-      const assignedTask = makeTask({ status: "assigned", agent: `/agents/${AGENT_UUID}` });
+      const task = makeTask({ status: "ready" });
+      const taskWithAgent = makeTask({ status: "ready", agent: `/agents/${AGENT_UUID}` });
 
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(pendingTask);
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(task);
       vi.mocked(agentReader.findByUuid).mockResolvedValue({
         "@id": `/agents/${AGENT_UUID}`,
         uuid: AGENT_UUID,
@@ -419,20 +419,20 @@ describe("TaskService", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      vi.mocked(taskRepository.assign).mockResolvedValue(assignedTask);
+      vi.mocked(taskRepository.assign).mockResolvedValue(taskWithAgent);
 
       const service = new TaskService(
         taskRepository,
         createMockProjectReader(),
         agentReader,
       );
-      const result = await service.assignTask(pendingTask.uuid, {
+      const result = await service.assignTask(task.uuid, {
         agent: `/agents/${AGENT_UUID}`,
       });
 
-      expect(result).toEqual(assignedTask);
+      expect(result).toEqual(taskWithAgent);
       expect(taskRepository.assign).toHaveBeenCalledWith(
-        pendingTask.uuid,
+        task.uuid,
         AGENT_UUID,
       );
     });
@@ -455,9 +455,9 @@ describe("TaskService", () => {
     it("should throw NotFoundError when agent does not exist", async () => {
       const taskRepository = createMockTaskRepository();
       const agentReader = createMockAgentReader();
-      const pendingTask = makeTask({ status: "pending" });
+      const task = makeTask();
 
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(pendingTask);
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(task);
       vi.mocked(agentReader.findByUuid).mockResolvedValue(undefined);
 
       const service = new TaskService(
@@ -467,29 +467,42 @@ describe("TaskService", () => {
       );
 
       await expect(
-        service.assignTask(pendingTask.uuid, { agent: `/agents/${AGENT_UUID}` }),
+        service.assignTask(task.uuid, { agent: `/agents/${AGENT_UUID}` }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError when task is not in pending status", async () => {
+    it("should allow assigning an agent to a task in any status", async () => {
       const taskRepository = createMockTaskRepository();
       const agentReader = createMockAgentReader();
-      const alreadyAssignedTask = makeTask({
-        status: "assigned",
+      const inProgressTask = makeTask({
+        status: "in_progress",
         agent: "/agents/550e8400-e29b-41d4-a716-446655440003",
       });
+      const reassignedTask = makeTask({
+        status: "in_progress",
+        agent: `/agents/${AGENT_UUID}`,
+      });
 
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(alreadyAssignedTask);
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(inProgressTask);
+      vi.mocked(agentReader.findByUuid).mockResolvedValue({
+        "@id": `/agents/${AGENT_UUID}`,
+        uuid: AGENT_UUID,
+        name: "Test Agent",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.mocked(taskRepository.assign).mockResolvedValue(reassignedTask);
 
       const service = new TaskService(
         taskRepository,
         createMockProjectReader(),
         agentReader,
       );
+      const result = await service.assignTask(inProgressTask.uuid, {
+        agent: `/agents/${AGENT_UUID}`,
+      });
 
-      await expect(
-        service.assignTask(alreadyAssignedTask.uuid, { agent: `/agents/${AGENT_UUID}` }),
-      ).rejects.toThrow(ValidationError);
+      expect(result).toEqual(reassignedTask);
     });
 
     it("should throw ValidationError when agent IRI is invalid", async () => {
@@ -508,10 +521,10 @@ describe("TaskService", () => {
   describe("updateTaskStatus", () => {
     it("should update task status", async () => {
       const taskRepository = createMockTaskRepository();
-      const pendingTask = makeTask({ status: "pending" });
+      const readyTask = makeTask({ status: "ready" });
       const inProgressTask = makeTask({ status: "in_progress" });
 
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(pendingTask);
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(readyTask);
       vi.mocked(taskRepository.updateStatus).mockResolvedValue(inProgressTask);
 
       const service = new TaskService(
@@ -519,13 +532,13 @@ describe("TaskService", () => {
         createMockProjectReader(),
         createMockAgentReader(),
       );
-      const result = await service.updateTaskStatus(pendingTask.uuid, {
+      const result = await service.updateTaskStatus(readyTask.uuid, {
         status: "in_progress",
       });
 
       expect(result).toEqual(inProgressTask);
       expect(taskRepository.updateStatus).toHaveBeenCalledWith(
-        pendingTask.uuid,
+        readyTask.uuid,
         "in_progress",
       );
     });
