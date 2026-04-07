@@ -39,7 +39,7 @@ export class EngineClient {
 
   async fetchPendingJobs(workerId: string): Promise<WorkerJob[]> {
     const response = await fetch(
-      `${this.engineUrl}/jobs?worker=/workers/${workerId}&status=pending`,
+      `${this.engineUrl}/jobs?worker=/workers/${workerId}&status=ready`,
     );
     if (!response.ok) {
       throw new Error(
@@ -65,11 +65,16 @@ export class EngineClient {
   async updateJobStatus(
     jobUuid: string,
     status: WorkerJob["status"],
+    failReason?: string,
   ): Promise<WorkerJob> {
+    const body: Record<string, string> = { status };
+    if (failReason !== undefined) {
+      body["failReason"] = failReason;
+    }
     const response = await fetch(`${this.engineUrl}/jobs/${jobUuid}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) {
       throw new Error(
@@ -89,6 +94,24 @@ export class EngineClient {
     }
 
     return response.json() as Promise<Task>;
+  }
+
+  async claimTask(
+    workerId: string,
+  ): Promise<{ job: WorkerJob; task: Task } | null> {
+    const response = await fetch(`${this.engineUrl}/tasks/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ worker: `/workers/${workerId}` }),
+    });
+    if (response.status === 204) return null;
+    if (!response.ok) {
+      throw new Error(
+        `Failed to claim task: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json() as Promise<{ job: WorkerJob; task: Task }>;
   }
 
   async updateTaskStatus(

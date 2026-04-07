@@ -9,6 +9,7 @@ function createMockEngineClient(): EngineClient {
     registerWorker: vi.fn(),
     heartbeat: vi.fn(),
     fetchPendingJobs: vi.fn(),
+    claimTask: vi.fn(),
     getJob: vi.fn(),
     updateJobStatus: vi.fn(),
     getTask: vi.fn(),
@@ -40,23 +41,26 @@ describe("PollingLoop", () => {
     const jobs = [
       {
         uuid: "job-1",
-        workerId: WORKER_ID,
+        worker: `/workers/${WORKER_ID}`,
         type: "execute_task" as const,
-        status: "pending" as const,
-        taskId: "task-1",
+        status: "ready" as const,
+        task: "/tasks/task-1",
+        failReason: null,
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
       },
       {
         uuid: "job-2",
-        workerId: WORKER_ID,
+        worker: `/workers/${WORKER_ID}`,
         type: "cleanup" as const,
-        status: "pending" as const,
-        taskId: null,
+        status: "ready" as const,
+        task: null,
+        failReason: null,
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
       },
     ];
+    vi.mocked(mockClient.claimTask).mockResolvedValue(null);
     vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue(jobs);
     vi.mocked(mockProcessor.process).mockResolvedValue();
 
@@ -71,6 +75,8 @@ describe("PollingLoop", () => {
     // Advance past the first poll
     await vi.advanceTimersByTimeAsync(0);
 
+    expect(mockClient.claimTask).toHaveBeenCalledTimes(1);
+    expect(mockClient.claimTask).toHaveBeenCalledWith(WORKER_ID);
     expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
     expect(mockClient.fetchPendingJobs).toHaveBeenCalledWith(WORKER_ID);
     expect(mockProcessor.process).toHaveBeenCalledTimes(2);
@@ -82,6 +88,7 @@ describe("PollingLoop", () => {
     const mockClient = createMockEngineClient();
     const mockProcessor = createMockJobProcessor();
 
+    vi.mocked(mockClient.claimTask).mockResolvedValue(null);
     vi.mocked(mockClient.fetchPendingJobs)
       .mockRejectedValueOnce(new Error("Network error"))
       .mockResolvedValueOnce([]);
@@ -105,10 +112,88 @@ describe("PollingLoop", () => {
     pollingLoop.stop();
   });
 
+  it("should claim a task and then process the resulting job", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    const claimResult = {
+      job: {
+        uuid: "job-claimed",
+        worker: `/workers/${WORKER_ID}`,
+        type: "execute_task" as const,
+        status: "ready" as const,
+        task: "/tasks/task-claimed",
+        failReason: null,
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      task: {
+        uuid: "task-claimed",
+        title: "Claimed task",
+        status: "in_progress" as const,
+        agentId: "agent-1",
+      },
+    };
+
+    vi.mocked(mockClient.claimTask).mockResolvedValueOnce(claimResult);
+    vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([
+      claimResult.job,
+    ]);
+    vi.mocked(mockProcessor.process).mockResolvedValue();
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockClient.claimTask).toHaveBeenCalledWith(WORKER_ID);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledWith(WORKER_ID);
+    expect(mockProcessor.process).toHaveBeenCalledWith(claimResult.job);
+
+    pollingLoop.stop();
+  });
+
+  it("should continue polling when claim errors", async () => {
+    const mockClient = createMockEngineClient();
+    const mockProcessor = createMockJobProcessor();
+
+    vi.mocked(mockClient.claimTask).mockRejectedValueOnce(
+      new Error("Claim failed"),
+    );
+    // After error, the whole try block catches so fetchPendingJobs won't be called
+    // On second iteration, claim succeeds
+    vi.mocked(mockClient.claimTask).mockResolvedValueOnce(null);
+    vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([]);
+
+    const pollingLoop = new PollingLoop(
+      mockClient,
+      mockProcessor,
+      WORKER_ID,
+    );
+
+    pollingLoop.start();
+
+    // First poll (claim error)
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockClient.claimTask).toHaveBeenCalledTimes(1);
+
+    // Second poll (success)
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockClient.claimTask).toHaveBeenCalledTimes(2);
+    expect(mockClient.fetchPendingJobs).toHaveBeenCalledTimes(1);
+
+    pollingLoop.stop();
+  });
+
   it("should stop when stop() is called", async () => {
     const mockClient = createMockEngineClient();
     const mockProcessor = createMockJobProcessor();
 
+    vi.mocked(mockClient.claimTask).mockResolvedValue(null);
     vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([]);
 
     const pollingLoop = new PollingLoop(
@@ -134,6 +219,7 @@ describe("PollingLoop", () => {
     const mockClient = createMockEngineClient();
     const mockProcessor = createMockJobProcessor();
 
+    vi.mocked(mockClient.claimTask).mockResolvedValue(null);
     vi.mocked(mockClient.fetchPendingJobs).mockResolvedValue([]);
     vi.mocked(mockClient.heartbeat).mockResolvedValue({} as never);
 

@@ -51,7 +51,7 @@ export function createWorkerRoutes(service: WorkerService): Router {
   router.get("/jobs", async (request, response) => {
     const workerIri = request.query["worker"]?.toString();
     const status = request.query["status"]?.toString() as
-      | "pending"
+      | "ready"
       | "in_progress"
       | "completed"
       | "failed"
@@ -91,6 +91,17 @@ export function createWorkerRoutes(service: WorkerService): Router {
     const uuid = request.params["uuid"] ?? "";
     const job = await service.updateJobStatus(uuid, request.body);
     response.json(job);
+  });
+
+  // Task claiming endpoint
+  router.post("/tasks/claim", async (request, response) => {
+    const result = await service.claimTask(request.body);
+    if (!result) {
+      response.status(204).send();
+
+      return;
+    }
+    response.status(201).json(result);
   });
 
   return router;

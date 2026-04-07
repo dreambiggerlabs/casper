@@ -70,6 +70,22 @@ services:
       engine:
         condition: service_healthy
 
+  engine-test:
+    build:
+      context: .docker
+      dockerfile: engine/Dockerfile
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      DATABASE_URL: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:5432/${DATABASE_NAME}"
+    volumes:
+      - ./apps/engine:/app
+    profiles:
+      - test
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
   pgdata:
   casper:

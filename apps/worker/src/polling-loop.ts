@@ -67,6 +67,10 @@ export class PollingLoop {
   private async poll(): Promise<void> {
     while (this.isRunning) {
       try {
+        // Phase 1: Try to claim an available task
+        await this.claimAvailableTask();
+
+        // Phase 2: Process already-assigned jobs
         const jobs = await this.engineClient.fetchPendingJobs(this.workerId);
         const jobCount = jobs.length;
 
@@ -78,7 +82,10 @@ export class PollingLoop {
 
           // State transition: idle → busy
           if (!this.isBusy) {
-            logger.info({ workerId: this.workerId }, "Worker state: idle → busy");
+            logger.info(
+              { workerId: this.workerId },
+              "Worker state: idle → busy",
+            );
             this.isBusy = true;
           }
 
@@ -88,7 +95,10 @@ export class PollingLoop {
         } else {
           // State transition: busy → idle
           if (this.isBusy) {
-            logger.info({ workerId: this.workerId }, "Worker state: busy → idle");
+            logger.info(
+              { workerId: this.workerId },
+              "Worker state: busy → idle",
+            );
             this.isBusy = false;
             this.lastIdleLog = Date.now();
             logger.debug({ workerId: this.workerId }, "Worker idle");
@@ -105,6 +115,16 @@ export class PollingLoop {
         logger.error({ err: error, workerId: this.workerId }, "Polling error");
       }
       await this.sleep(POLL_INTERVAL_MS);
+    }
+  }
+
+  private async claimAvailableTask(): Promise<void> {
+    const result = await this.engineClient.claimTask(this.workerId);
+    if (result) {
+      logger.info(
+        { taskId: result.task.uuid, jobId: result.job.uuid },
+        "Claimed task, job created",
+      );
     }
   }
 

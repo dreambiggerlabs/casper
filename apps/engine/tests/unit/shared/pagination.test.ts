@@ -78,16 +78,16 @@ describe("createHydraCollection", () => {
       page: 1,
       itemsPerPage: 10,
       basePath: "/tasks",
-      extraParams: { status: "pending", agent: "/agents/some-uuid" },
+      extraParams: { status: "ready", agent: "/agents/some-uuid" },
     });
 
-    expect(result.view?.["@id"]).toContain("status=pending");
+    expect(result.view?.["@id"]).toContain("status=ready");
     expect(result.view?.["@id"]).toContain(
       "agent=%2Fagents%2Fsome-uuid",
     );
     expect(result.view?.["@id"]).toContain("page=1");
     expect(result.view?.next).toContain("page=2");
-    expect(result.view?.next).toContain("status=pending");
+    expect(result.view?.next).toContain("status=ready");
   });
 
   it("should handle empty collection", () => {

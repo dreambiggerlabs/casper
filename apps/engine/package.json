@@ -14,12 +14,16 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e",
     "audit": "npm audit",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm audit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/shared/seed/seed.ts"
   },
   "dependencies": {
     "@scalar/express-api-reference": "^0.9.5",

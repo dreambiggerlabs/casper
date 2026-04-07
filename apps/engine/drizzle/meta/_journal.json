@@ -57,6 +57,41 @@
       "when": 1775064000000,
       "tag": "0007_make_updated_at_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775066000000,
+      "tag": "0008_add_job_fail_reason",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775068000000,
+      "tag": "0009_allow_retry_after_failed_job",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775070000000,
+      "tag": "0010_refactor_task_statuses",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775072000000,
+      "tag": "0011_add_status_enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1775074000000,
+      "tag": "0012_fix_job_task_unique_index",
+      "breakpoints": true
     }
   ]
 }

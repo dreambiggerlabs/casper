@@ -60,6 +60,8 @@ docker compose down      # stop all services
 
 ### Running commands inside a container
 
+**No local package managers:** There is no pnpm or npm installed on the host. All package management and script execution must happen inside Docker containers.
+
 Never install packages or run commands on the host. Use `docker compose exec` to run commands inside a running service container:
 
 ```bash
@@ -67,6 +69,8 @@ docker compose exec {service} npm install {package}
 docker compose exec {service} npm run typecheck
 docker compose exec {service} npm test
 ```
+
+Replace `{service}` with one of: `engine`, `worker`, or `studio`.
 
 ### Adding services
 
@@ -79,10 +83,10 @@ A change is done when all are true:
 1. **API docs updated** — OpenAPI spec reflects all endpoint changes
 2. **Tests pass** — Unit and integration tests written and passing
 3. **API-first workflow followed** — Schema → Service → Route → Docs
-4. **Type check passes** — `npm run typecheck` succeeds
-5. **Lint passes** — `npm run lint` succeeds
-6. **Format check passes** — `npm run format:check` succeeds
-7. **Build succeeds** — `npm run build` succeeds
+4. **Type check passes** — `docker compose exec {service} npm run typecheck` succeeds
+5. **Lint passes** — `docker compose exec {service} npm run lint` succeeds
+6. **Format check passes** — `docker compose exec {service} npm run format:check` succeeds
+7. **Build succeeds** — `docker compose exec {service} npm run build` succeeds
 
 ## 6. Code Quality Requirements
 
@@ -90,25 +94,25 @@ All code contributions must pass automated quality checks.
 
 ### Mandatory Checks
 
-Run these before committing:
+Run these before committing (inside containers via `docker compose exec {service}`):
 
-| Check      | Command                | Purpose                      |
-| ---------- | ---------------------- | ---------------------------- |
-| Type check | `npm run typecheck`    | Catches type errors          |
-| Lint       | `npm run lint`         | Enforces code quality        |
-| Format     | `npm run format:check` | Ensures consistent style     |
-| Test       | `npm test`             | Verifies behaviour           |
-| Audit      | `npm audit`            | Security vulnerability check |
+| Check      | Command                                | Purpose                      |
+| ---------- | -------------------------------------- | ---------------------------- |
+| Type check | `docker compose exec {service} npm run typecheck`    | Catches type errors          |
+| Lint       | `docker compose exec {service} npm run lint`         | Enforces code quality        |
+| Format     | `docker compose exec {service} npm run format:check` | Ensures consistent style     |
+| Test       | `docker compose exec {service} npm test`             | Verifies behaviour           |
+| Audit      | `docker compose exec {service} npm audit`            | Security vulnerability check |
 
 ### Pre-commit Enforcement
 
 Run these checks before committing:
 
-- **Formatting** — `npm run format:check` validates style
-- **Linting** — `npm run lint` catches issues
-- **Type checking** — `npm run typecheck` verifies types
-- **Tests** — `npm test` runs affected tests
-- **Audit** — `npm audit` checks for vulnerabilities
+- **Formatting** — `docker compose exec {service} npm run format:check` validates style
+- **Linting** — `docker compose exec {service} npm run lint` catches issues
+- **Type checking** — `docker compose exec {service} npm run typecheck` verifies types
+- **Tests** — `docker compose exec {service} npm test` runs affected tests
+- **Audit** — `docker compose exec {service} npm audit` checks for vulnerabilities
 
 Failed checks must be fixed before committing.
 
@@ -127,20 +131,22 @@ No exceptions. Fix failing checks before requesting review.
 
 ## 7. Running Quality Checks
 
+All commands must be run inside containers via `docker compose exec`:
+
 ```bash
-# Run all checks
-npm run check
+# Run all checks (replace {service} with engine/worker/studio)
+docker compose exec {service} npm run check
 
 # Individual checks
-npm run typecheck
-npm run lint
-npm run lint:fix      # auto-fix lint issues
-npm run format
-npm run format:check
-npm test
+docker compose exec {service} npm run typecheck
+docker compose exec {service} npm run lint
+docker compose exec {service} npm run lint:fix      # auto-fix lint issues
+docker compose exec {service} npm run format
+docker compose exec {service} npm run format:check
+docker compose exec {service} npm test
 
 # Build
-npm run build
+docker compose exec {service} npm run build
 ```
 
 ## 8. Security Requirements
@@ -212,7 +218,7 @@ The repository must enforce protections against accidental secret commits:
 
 ### Dependency Security
 
-- Run `npm audit` before every commit (enforced by pre-commit hooks)
+- Run `docker compose exec {service} npm audit` before every commit (enforced by pre-commit hooks)
 - **No high or critical vulnerabilities** are allowed in production dependencies
 - Pin exact dependency versions in `package-lock.json`
 - Review new dependencies before adding them — prefer well-maintained, widely-used packages
