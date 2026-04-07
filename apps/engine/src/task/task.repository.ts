@@ -1,7 +1,18 @@
-import { eq, and, count as drizzleCount, type SQL } from "drizzle-orm";
+import {
+  eq,
+  and,
+  count as drizzleCount,
+  sql,
+  type SQL,
+  type AnyColumn,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
+
+import { project } from "../project/project.schema.js";
+import { agent } from "../agent/agent.schema.js";
 
 import { task } from "./task.schema.js";
 import type { TaskStatus } from "./task.schema.js";
@@ -12,38 +23,72 @@ import type {
   UpdateTask,
 } from "./task.types.js";
 
-function toTask(row: typeof task.$inferSelect): Task {
+const parentTask = alias(task, "parent_task");
+
+interface TaskRow {
+  id: number;
+  uuid: string;
+  title: string;
+  status: TaskStatus;
+  createdAt: Date;
+  updatedAt: Date | null;
+  projectUuid: string;
+  parentUuid: string | null;
+  agentUuid: string | null;
+}
+
+function toTask(row: TaskRow): Task {
   return {
     "@id": toIri("tasks", row.uuid),
     uuid: row.uuid,
     title: row.title,
-    project: toIri("projects", row.projectId),
-    parent: row.parentId ? toIri("tasks", row.parentId) : null,
+    project: toIri("projects", row.projectUuid),
+    parent: row.parentUuid ? toIri("tasks", row.parentUuid) : null,
     status: row.status,
-    agent: row.agentId ? toIri("agents", row.agentId) : null,
+    agent: row.agentUuid ? toIri("agents", row.agentUuid) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
+/** Resolve a UUID to an integer ID via subquery. */
+function resolveId(table: { id: AnyColumn; uuid: AnyColumn }, uuid: string) {
+  return sql<number>`(SELECT ${table.id} FROM ${table} WHERE ${table.uuid} = ${uuid})`;
+}
+
+const taskColumns = {
+  id: task.id,
+  uuid: task.uuid,
+  title: task.title,
+  status: task.status,
+  createdAt: task.createdAt,
+  updatedAt: task.updatedAt,
+  projectUuid: project.uuid,
+  parentUuid: parentTask.uuid,
+  agentUuid: agent.uuid,
+};
+
 export class DrizzleTaskRepository implements TaskRepository {
   constructor(private readonly database: Database) {}
 
-  async findByUuid(uuid: string): Promise<Task | undefined> {
-    const rows = await this.database
-      .select()
+  private baseQuery() {
+    return this.database
+      .select(taskColumns)
       .from(task)
-      .where(eq(task.uuid, uuid));
+      .innerJoin(project, eq(task.projectId, project.id))
+      .leftJoin(parentTask, eq(task.parentId, parentTask.id))
+      .leftJoin(agent, eq(task.agentId, agent.id));
+  }
+
+  async findByUuid(uuid: string): Promise<Task | undefined> {
+    const rows = await this.baseQuery().where(eq(task.uuid, uuid));
     const row = rows[0];
 
     return row ? toTask(row) : undefined;
   }
 
   async findByProjectId(projectId: string): Promise<Task[]> {
-    const rows = await this.database
-      .select()
-      .from(task)
-      .where(eq(task.projectId, projectId));
+    const rows = await this.baseQuery().where(eq(project.uuid, projectId));
 
     return rows.map(toTask);
   }
@@ -52,16 +97,15 @@ export class DrizzleTaskRepository implements TaskRepository {
     status: TaskStatus,
     agentId: string,
   ): Promise<Task[]> {
-    const rows = await this.database
-      .select()
-      .from(task)
-      .where(and(eq(task.status, status), eq(task.agentId, agentId)));
+    const rows = await this.baseQuery().where(
+      and(eq(task.status, status), eq(agent.uuid, agentId)),
+    );
 
     return rows.map(toTask);
   }
 
   async findAll(): Promise<Task[]> {
-    const rows = await this.database.select().from(task);
+    const rows = await this.baseQuery();
 
     return rows.map(toTask);
   }
@@ -73,9 +117,9 @@ export class DrizzleTaskRepository implements TaskRepository {
   }): SQL | undefined {
     const conditions: SQL[] = [];
     if (filters?.status) conditions.push(eq(task.status, filters.status));
-    if (filters?.agentId) conditions.push(eq(task.agentId, filters.agentId));
+    if (filters?.agentId) conditions.push(eq(agent.uuid, filters.agentId));
     if (filters?.projectId)
-      conditions.push(eq(task.projectId, filters.projectId));
+      conditions.push(eq(project.uuid, filters.projectId));
     if (conditions.length === 0) return undefined;
     if (conditions.length === 1) return conditions[0];
 
@@ -88,7 +132,11 @@ export class DrizzleTaskRepository implements TaskRepository {
     projectId?: string;
   }): Promise<number> {
     const where = this.buildFilters(filters);
-    const query = this.database.select({ count: drizzleCount() }).from(task);
+    const query = this.database
+      .select({ count: drizzleCount() })
+      .from(task)
+      .innerJoin(project, eq(task.projectId, project.id))
+      .leftJoin(agent, eq(task.agentId, agent.id));
     const rows = where ? await query.where(where) : await query;
 
     return rows[0]?.count ?? 0;
@@ -102,7 +150,7 @@ export class DrizzleTaskRepository implements TaskRepository {
     projectId?: string;
   }): Promise<Task[]> {
     const where = this.buildFilters(params);
-    const query = this.database.select().from(task);
+    const query = this.baseQuery();
     const filtered = where ? query.where(where) : query;
     const rows = await filtered.limit(params.limit).offset(params.offset);
 
@@ -110,35 +158,63 @@ export class DrizzleTaskRepository implements TaskRepository {
   }
 
   async create(data: CreateTask): Promise<Task> {
-    const rows = await this.database.insert(task).values(data).returning();
+    const rows = await this.database
+      .insert(task)
+      .values({
+        title: data.title,
+        projectId: resolveId(project, data.projectId),
+        parentId: data.parentId
+          ? resolveId(task, data.parentId)
+          : undefined,
+      })
+      .returning();
     const row = rows[0];
     if (!row) {
       throw new Error("Failed to create task");
     }
 
-    return toTask(row);
+    // Re-fetch with JOINs to get related UUIDs
+    const created = await this.findByUuid(row.uuid);
+    if (!created) {
+      throw new Error("Failed to fetch created task");
+    }
+
+    return created;
   }
 
   async update(uuid: string, data: UpdateTask): Promise<Task | undefined> {
+    const setData: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.title !== undefined) setData.title = data.title;
+    if (data.projectId !== undefined)
+      setData.projectId = resolveId(project, data.projectId);
+    if (data.parentId !== undefined)
+      setData.parentId =
+        data.parentId === null ? null : resolveId(task, data.parentId);
+
     const rows = await this.database
       .update(task)
-      .set({ ...data, updatedAt: new Date() })
+      .set(setData)
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+    if (!row) return undefined;
 
-    return row ? toTask(row) : undefined;
+    return this.findByUuid(row.uuid);
   }
 
   async assign(uuid: string, agentId: string): Promise<Task | undefined> {
     const rows = await this.database
       .update(task)
-      .set({ agentId, updatedAt: new Date() })
+      .set({
+        agentId: resolveId(agent, agentId),
+        updatedAt: new Date(),
+      })
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+    if (!row) return undefined;
 
-    return row ? toTask(row) : undefined;
+    return this.findByUuid(row.uuid);
   }
 
   async updateStatus(
@@ -151,7 +227,8 @@ export class DrizzleTaskRepository implements TaskRepository {
       .where(eq(task.uuid, uuid))
       .returning();
     const row = rows[0];
+    if (!row) return undefined;
 
-    return row ? toTask(row) : undefined;
+    return this.findByUuid(row.uuid);
   }
 }

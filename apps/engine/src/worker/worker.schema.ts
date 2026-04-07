@@ -2,6 +2,7 @@ import {
   pgTable,
   pgEnum,
   serial,
+  integer,
   uuid,
   varchar,
   text,
@@ -59,10 +60,10 @@ export const workerJob = pgTable(
   {
     id: serial("id").primaryKey(),
     uuid: uuid("uuid").defaultRandom().notNull().unique(),
-    workerId: uuid("worker_id").notNull(),
+    workerId: integer("worker_id").notNull(),
     type: jobTypeEnum().notNull(),
     status: jobStatusEnum().notNull().default("ready"),
-    taskId: uuid("task_id"),
+    taskId: integer("task_id"),
     failReason: text("fail_reason"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -72,11 +73,11 @@ export const workerJob = pgTable(
   (table) => ({
     workerForeignKey: foreignKey({
       columns: [table.workerId],
-      foreignColumns: [worker.uuid],
+      foreignColumns: [worker.id],
     }),
     taskForeignKey: foreignKey({
       columns: [table.taskId],
-      foreignColumns: [task.uuid],
+      foreignColumns: [task.id],
     }),
   }),
 );

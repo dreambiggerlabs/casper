@@ -1,7 +1,17 @@
-import { eq, ne, and, count as drizzleCount } from "drizzle-orm";
+import {
+  eq,
+  ne,
+  and,
+  count as drizzleCount,
+  sql,
+  type SQL,
+  type AnyColumn,
+} from "drizzle-orm";
 
 import type { Database } from "../shared/database/index.js";
 import { toIri } from "../shared/iri/index.js";
+
+import { task } from "../task/task.schema.js";
 
 import { worker, workerJob } from "./worker.schema.js";
 import type {
@@ -27,19 +37,48 @@ function toWorker(row: typeof worker.$inferSelect): Worker {
   };
 }
 
-function toWorkerJob(row: typeof workerJob.$inferSelect): WorkerJob {
+interface WorkerJobRow {
+  id: number;
+  uuid: string;
+  type: JobType;
+  status: JobStatus;
+  failReason: string | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  workerUuid: string;
+  taskUuid: string | null;
+}
+
+function toWorkerJob(row: WorkerJobRow): WorkerJob {
   return {
     "@id": toIri("jobs", row.uuid),
     uuid: row.uuid,
-    worker: toIri("workers", row.workerId),
+    worker: toIri("workers", row.workerUuid),
     type: row.type,
     status: row.status,
-    task: row.taskId ? toIri("tasks", row.taskId) : null,
+    task: row.taskUuid ? toIri("tasks", row.taskUuid) : null,
     failReason: row.failReason,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
+
+/** Resolve a UUID to an integer ID via subquery. */
+function resolveId(table: { id: AnyColumn; uuid: AnyColumn }, uuid: string) {
+  return sql<number>`(SELECT ${table.id} FROM ${table} WHERE ${table.uuid} = ${uuid})`;
+}
+
+const jobColumns = {
+  id: workerJob.id,
+  uuid: workerJob.uuid,
+  type: workerJob.type,
+  status: workerJob.status,
+  failReason: workerJob.failReason,
+  createdAt: workerJob.createdAt,
+  updatedAt: workerJob.updatedAt,
+  workerUuid: worker.uuid,
+  taskUuid: task.uuid,
+};
 
 export class DrizzleWorkerRepository implements WorkerRepository {
   constructor(private readonly database: Database) {}
@@ -132,11 +171,16 @@ export class DrizzleWorkerRepository implements WorkerRepository {
 export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   constructor(private readonly database: Database) {}
 
-  async findJobByUuid(uuid: string): Promise<WorkerJob | undefined> {
-    const rows = await this.database
-      .select()
+  private baseQuery() {
+    return this.database
+      .select(jobColumns)
       .from(workerJob)
-      .where(eq(workerJob.uuid, uuid));
+      .innerJoin(worker, eq(workerJob.workerId, worker.id))
+      .leftJoin(task, eq(workerJob.taskId, task.id));
+  }
+
+  async findJobByUuid(uuid: string): Promise<WorkerJob | undefined> {
+    const rows = await this.baseQuery().where(eq(workerJob.uuid, uuid));
     const row = rows[0];
 
     return row ? toWorkerJob(row) : undefined;
@@ -146,31 +190,33 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     workerId: string,
     status?: JobStatus,
   ): Promise<WorkerJob[]> {
-    const query = status
-      ? and(eq(workerJob.workerId, workerId), eq(workerJob.status, status))
-      : eq(workerJob.workerId, workerId);
-    const rows = await this.database.select().from(workerJob).where(query);
+    const conditions: SQL[] = [eq(worker.uuid, workerId)];
+    if (status) conditions.push(eq(workerJob.status, status));
+    const query =
+      conditions.length === 1 ? conditions[0] : and(...conditions);
+    const rows = await this.baseQuery().where(query);
 
     return rows.map(toWorkerJob);
   }
 
   async findJobByTaskId(taskId: string): Promise<WorkerJob | undefined> {
-    const rows = await this.database
-      .select()
-      .from(workerJob)
-      .where(and(eq(workerJob.taskId, taskId), ne(workerJob.status, "failed")));
+    const rows = await this.baseQuery().where(
+      and(eq(task.uuid, taskId), ne(workerJob.status, "failed")),
+    );
     const row = rows[0];
 
     return row ? toWorkerJob(row) : undefined;
   }
 
   async countJobs(workerId: string, status?: JobStatus): Promise<number> {
-    const where = status
-      ? and(eq(workerJob.workerId, workerId), eq(workerJob.status, status))
-      : eq(workerJob.workerId, workerId);
+    const conditions: SQL[] = [eq(worker.uuid, workerId)];
+    if (status) conditions.push(eq(workerJob.status, status));
+    const where =
+      conditions.length === 1 ? conditions[0] : and(...conditions);
     const rows = await this.database
       .select({ count: drizzleCount() })
       .from(workerJob)
+      .innerJoin(worker, eq(workerJob.workerId, worker.id))
       .where(where);
 
     return rows[0]?.count ?? 0;
@@ -182,15 +228,11 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
     limit: number;
     offset: number;
   }): Promise<WorkerJob[]> {
-    const where = params.status
-      ? and(
-          eq(workerJob.workerId, params.workerId),
-          eq(workerJob.status, params.status),
-        )
-      : eq(workerJob.workerId, params.workerId);
-    const rows = await this.database
-      .select()
-      .from(workerJob)
+    const conditions: SQL[] = [eq(worker.uuid, params.workerId)];
+    if (params.status) conditions.push(eq(workerJob.status, params.status));
+    const where =
+      conditions.length === 1 ? conditions[0] : and(...conditions);
+    const rows = await this.baseQuery()
       .where(where)
       .limit(params.limit)
       .offset(params.offset);
@@ -204,14 +246,24 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   ): Promise<WorkerJob> {
     const rows = await this.database
       .insert(workerJob)
-      .values({ workerId, ...data })
+      .values({
+        workerId: resolveId(worker, workerId),
+        type: data.type,
+        taskId: data.taskId ? resolveId(task, data.taskId) : undefined,
+      })
       .returning();
     const row = rows[0];
     if (!row) {
       throw new Error("Failed to create job");
     }
 
-    return toWorkerJob(row);
+    // Re-fetch with JOINs to get related UUIDs
+    const created = await this.findJobByUuid(row.uuid);
+    if (!created) {
+      throw new Error("Failed to fetch created job");
+    }
+
+    return created;
   }
 
   async updateJobStatus(
@@ -225,7 +277,8 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
       .where(eq(workerJob.uuid, uuid))
       .returning();
     const row = rows[0];
+    if (!row) return undefined;
 
-    return row ? toWorkerJob(row) : undefined;
+    return this.findJobByUuid(row.uuid);
   }
 }

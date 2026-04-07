@@ -25,6 +25,7 @@ import {
   createJobSchema,
   updateJobStatusSchema,
   claimTaskSchema,
+  worker as workerTable,
   workerJob,
 } from "./worker.schema.js";
 import type {
@@ -202,20 +203,38 @@ export class WorkerService {
     return this.database.transaction(async (tx) => {
       // Find and lock an available task (assigned but not yet claimed)
       const rows = await tx.execute<Record<string, unknown>>(
-        sql`SELECT * FROM task WHERE status = 'ready' AND agent_id IS NOT NULL ORDER BY created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED`,
+        sql`SELECT t.*, p.uuid AS project_uuid, a.uuid AS agent_uuid, pt.uuid AS parent_uuid
+            FROM task t
+            INNER JOIN project p ON t.project_id = p.id
+            LEFT JOIN agent a ON t.agent_id = a.id
+            LEFT JOIN task pt ON t.parent_id = pt.id
+            WHERE t.status = 'ready' AND t.agent_id IS NOT NULL
+            ORDER BY t.created_at ASC LIMIT 1
+            FOR UPDATE OF t SKIP LOCKED`,
       );
       const taskRow = rows[0];
       if (!taskRow) return null;
 
+      const taskId = taskRow.id as number;
       const taskUuid = taskRow.uuid as string;
 
-      // Create a job for this worker + task
+      // Look up worker's internal ID
+      const workerRows = await tx
+        .select({ id: workerTable.id })
+        .from(workerTable)
+        .where(eq(workerTable.uuid, worker.uuid));
+      const workerRow = workerRows[0];
+      if (!workerRow) {
+        throw new Error("Worker not found in transaction");
+      }
+
+      // Create a job for this worker + task (using integer IDs)
       const jobRows = await tx
         .insert(workerJob)
         .values({
-          workerId: worker.uuid,
+          workerId: workerRow.id,
           type: "execute_task",
-          taskId: taskUuid,
+          taskId: taskId,
         })
         .returning();
       const jobRow = jobRows[0];
@@ -238,13 +257,13 @@ export class WorkerService {
         "@id": toIri("tasks", updatedTaskRow.uuid),
         uuid: updatedTaskRow.uuid,
         title: updatedTaskRow.title,
-        project: toIri("projects", updatedTaskRow.projectId),
-        parent: updatedTaskRow.parentId
-          ? toIri("tasks", updatedTaskRow.parentId)
+        project: toIri("projects", taskRow.project_uuid as string),
+        parent: taskRow.parent_uuid
+          ? toIri("tasks", taskRow.parent_uuid as string)
           : null,
         status: updatedTaskRow.status as Task["status"],
-        agent: updatedTaskRow.agentId
-          ? toIri("agents", updatedTaskRow.agentId)
+        agent: taskRow.agent_uuid
+          ? toIri("agents", taskRow.agent_uuid as string)
           : null,
         createdAt: updatedTaskRow.createdAt,
         updatedAt: updatedTaskRow.updatedAt,
@@ -253,10 +272,10 @@ export class WorkerService {
       const claimedJob: WorkerJob = {
         "@id": toIri("jobs", jobRow.uuid),
         uuid: jobRow.uuid,
-        worker: toIri("workers", jobRow.workerId),
+        worker: toIri("workers", worker.uuid),
         type: jobRow.type as WorkerJob["type"],
         status: jobRow.status as JobStatus,
-        task: jobRow.taskId ? toIri("tasks", jobRow.taskId) : null,
+        task: toIri("tasks", taskUuid),
         failReason: jobRow.failReason,
         createdAt: jobRow.createdAt,
         updatedAt: jobRow.updatedAt,

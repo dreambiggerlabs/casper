@@ -92,6 +92,13 @@
       "when": 1775074000000,
       "tag": "0012_fix_job_task_unique_index",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1775076000000,
+      "tag": "0013_use_integer_foreign_keys",
+      "breakpoints": true
     }
   ]
 }

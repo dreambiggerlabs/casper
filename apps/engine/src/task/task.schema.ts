@@ -2,6 +2,7 @@ import {
   pgTable,
   pgEnum,
   serial,
+  integer,
   uuid,
   varchar,
   timestamp,
@@ -33,10 +34,10 @@ export const task = pgTable(
     id: serial("id").primaryKey(),
     uuid: uuid("uuid").defaultRandom().notNull().unique(),
     title: varchar("title", { length: 255 }).notNull(),
-    projectId: uuid("project_id").notNull(),
-    parentId: uuid("parent_id"),
+    projectId: integer("project_id").notNull(),
+    parentId: integer("parent_id"),
     status: taskStatusEnum().notNull().default("backlog"),
-    agentId: uuid("agent_id"),
+    agentId: integer("agent_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -45,15 +46,15 @@ export const task = pgTable(
   (table) => ({
     projectForeignKey: foreignKey({
       columns: [table.projectId],
-      foreignColumns: [project.uuid],
+      foreignColumns: [project.id],
     }),
     parentForeignKey: foreignKey({
       columns: [table.parentId],
-      foreignColumns: [table.uuid],
+      foreignColumns: [table.id],
     }),
     agentForeignKey: foreignKey({
       columns: [table.agentId],
-      foreignColumns: [agent.uuid],
+      foreignColumns: [agent.id],
     }),
   }),
 );

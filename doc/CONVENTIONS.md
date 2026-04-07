@@ -313,6 +313,24 @@ Table names use the pattern `{domain}_{entity}` in snake_case. When the entity n
 | Primary keys | `id` | `id` |
 | Foreign keys | `{table}_id` | `task_id`, `agent_id` |
 
+#### Identity columns
+
+Every table has two identity columns:
+
+- `id` — auto-incrementing integer (`serial`). Used as the **primary key** and for all **foreign key references** between tables. This is an internal database concern and is never exposed in API responses.
+- `uuid` — randomly generated UUID. Used exclusively for **public API communication** (JSON responses, IRIs, URL parameters). Never used as a foreign key target.
+
+Foreign key columns are always `integer` type and reference the `id` column of the related table — never the `uuid` column.
+
+#### Identity columns
+
+Every table has two identity columns:
+
+- `id` — auto-incrementing integer (`serial`). Used as the **primary key** and for all **foreign key references** between tables. This is an internal database concern and is never exposed in API responses.
+- `uuid` — randomly generated UUID. Used exclusively for **public API communication** (JSON responses, IRIs, URL parameters). Never used as a foreign key target.
+
+Foreign key columns are always `integer` type and reference the `id` column of the related table — never the `uuid` column.
+
 ---
 
 ## Code Quality Standards
@@ -487,3 +505,12 @@ Table names use the pattern `{domain}_{entity}` in snake_case. When the entity n
 | Columns | snake_case | `created_at`, `task_id` |
 | Primary keys | `id` | `id` |
 | Foreign keys | `{table}_id` | `task_id`, `agent_id` |
+
+#### Identity columns
+
+Every table has two identity columns:
+
+- `id` — auto-incrementing integer (`serial`). Used as the **primary key** and for all **foreign key references** between tables. This is an internal database concern and is never exposed in API responses.
+- `uuid` — randomly generated UUID. Used exclusively for **public API communication** (JSON responses, IRIs, URL parameters). Never used as a foreign key target.
+
+Foreign key columns are always `integer` type and reference the `id` column of the related table — never the `uuid` column.
