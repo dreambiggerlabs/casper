@@ -82,7 +82,10 @@ export class PollingLoop {
 
           // State transition: idle → busy
           if (!this.isBusy) {
-            logger.info({ workerId: this.workerId }, "Worker state: idle → busy");
+            logger.info(
+              { workerId: this.workerId },
+              "Worker state: idle → busy",
+            );
             this.isBusy = true;
           }
 
@@ -92,7 +95,10 @@ export class PollingLoop {
         } else {
           // State transition: busy → idle
           if (this.isBusy) {
-            logger.info({ workerId: this.workerId }, "Worker state: busy → idle");
+            logger.info(
+              { workerId: this.workerId },
+              "Worker state: busy → idle",
+            );
             this.isBusy = false;
             this.lastIdleLog = Date.now();
             logger.debug({ workerId: this.workerId }, "Worker idle");
