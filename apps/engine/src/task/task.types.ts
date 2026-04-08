@@ -12,6 +12,7 @@ export interface Task {
   "@id": string;
   uuid: string;
   title: string;
+  description: string | null;
   project: string;
   parent: string | null;
   status: TaskStatus;

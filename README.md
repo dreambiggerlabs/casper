@@ -1,7 +1,7 @@
-# 👻 Casper Engine
+# 👻 Casper
 
 > 🚧 **Currently in development**  
-> Casper Engine is actively being built and will be released soon.  
+> Casper is actively being built and will be released soon.  
 > If you're interested, ⭐ follow/watch this repository for updates and early releases.
 
 **Agentic coding engine** — receive tasks from Slack, GitHub, GitLab or a REST API, dispatch them to LLM agents running inside isolated environments, validate changes through a multi-step pipeline, open pull requests, and iterate on review feedback.

@@ -4,3 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 docker compose up "$@"
+
+echo ""
+echo "Tip: If you need to run migrations, use:"
+echo "   ./etc/script/start --force-recreate    # Re-run migrations without rebuilding"
+echo "   ./etc/script/start --build             # Rebuild images and run migrations"

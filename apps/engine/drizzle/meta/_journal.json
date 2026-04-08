@@ -99,6 +99,13 @@
       "when": 1775076000000,
       "tag": "0013_use_integer_foreign_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1744099200000,
+      "tag": "0014_add_task_description",
+      "breakpoints": true
     }
   ]
 }

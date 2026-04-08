@@ -29,6 +29,7 @@ interface TaskRow {
   id: number;
   uuid: string;
   title: string;
+  description: string | null;
   status: TaskStatus;
   createdAt: Date;
   updatedAt: Date | null;
@@ -42,6 +43,7 @@ function toTask(row: TaskRow): Task {
     "@id": toIri("tasks", row.uuid),
     uuid: row.uuid,
     title: row.title,
+    description: row.description,
     project: toIri("projects", row.projectUuid),
     parent: row.parentUuid ? toIri("tasks", row.parentUuid) : null,
     status: row.status,
@@ -60,6 +62,7 @@ const taskColumns = {
   id: task.id,
   uuid: task.uuid,
   title: task.title,
+  description: task.description,
   status: task.status,
   createdAt: task.createdAt,
   updatedAt: task.updatedAt,
@@ -162,6 +165,7 @@ export class DrizzleTaskRepository implements TaskRepository {
       .insert(task)
       .values({
         title: data.title,
+        description: data.description,
         projectId: resolveId(project, data.projectId),
         parentId: data.parentId
           ? resolveId(task, data.parentId)
@@ -185,6 +189,7 @@ export class DrizzleTaskRepository implements TaskRepository {
   async update(uuid: string, data: UpdateTask): Promise<Task | undefined> {
     const setData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.title !== undefined) setData.title = data.title;
+    if (data.description !== undefined) setData.description = data.description;
     if (data.projectId !== undefined)
       setData.projectId = resolveId(project, data.projectId);
     if (data.parentId !== undefined)

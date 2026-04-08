@@ -257,6 +257,7 @@ export class WorkerService {
         "@id": toIri("tasks", updatedTaskRow.uuid),
         uuid: updatedTaskRow.uuid,
         title: updatedTaskRow.title,
+        description: updatedTaskRow.description,
         project: toIri("projects", taskRow.project_uuid as string),
         parent: taskRow.parent_uuid
           ? toIri("tasks", taskRow.parent_uuid as string)

@@ -7,6 +7,7 @@ import {
   varchar,
   timestamp,
   foreignKey,
+  text,
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -34,6 +35,7 @@ export const task = pgTable(
     id: serial("id").primaryKey(),
     uuid: uuid("uuid").defaultRandom().notNull().unique(),
     title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
     projectId: integer("project_id").notNull(),
     parentId: integer("parent_id"),
     status: taskStatusEnum().notNull().default("backlog"),
@@ -62,11 +64,13 @@ export const task = pgTable(
 export const createTaskSchema = z
   .object({
     title: z.string().min(1, "Title is required").max(255),
+    description: z.string().nullish(),
     project: iriSchema("projects"),
     parent: iriSchema("tasks").optional(),
   })
-  .transform(({ title, project, parent }) => ({
+  .transform(({ title, description, project, parent }) => ({
     title,
+    description,
     projectId: project,
     parentId: parent,
   }));
@@ -74,14 +78,16 @@ export const createTaskSchema = z
 export const updateTaskSchema = z
   .object({
     title: z.string().min(1, "Title must not be empty").max(255).optional(),
+    description: z.string().nullish(),
     project: iriSchema("projects").optional(),
     parent: nullableIriSchema("tasks").optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
   })
-  .transform(({ title, project, parent }) => ({
+  .transform(({ title, description, project, parent }) => ({
     title,
+    description,
     projectId: project,
     parentId: parent,
   }));

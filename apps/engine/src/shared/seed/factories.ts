@@ -66,6 +66,7 @@ export async function createTask(
   const repo = new DrizzleTaskRepository(db);
   const task = await repo.create({
     title: overrides.title ?? `Task ${nextId()}`,
+    description: null,
     projectId: overrides.projectId,
     parentId: overrides.parentId,
   });
