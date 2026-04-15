@@ -2,10 +2,14 @@ import type { Logger } from "pino";
 
 import { logger } from "./logging/logger.js";
 import type { EngineClient } from "./engine-client.js";
+import type { TaskExecutor } from "./task-executor.js";
 import type { WorkerJob } from "./types.js";
 
 export class JobProcessor {
-  constructor(private readonly engineClient: EngineClient) {}
+  constructor(
+    private readonly engineClient: EngineClient,
+    private readonly taskExecutor: TaskExecutor,
+  ) {}
 
   async process(job: WorkerJob): Promise<void> {
     const jobLogger = logger.child({ jobId: job.uuid, jobType: job.type });
@@ -70,23 +74,9 @@ export class JobProcessor {
 
     const taskUuid = this.parseIri(job.task);
     const task = await this.engineClient.getTask(taskUuid);
-    jobLogger.info(
-      { taskId: task.uuid, taskTitle: task.title },
-      "Executing task",
-    );
 
-    // Spawn agent (mock) — only execute_task jobs claim agent-assigned tasks
-    if (task.assignee) {
-      jobLogger.info(
-        { assignee: task.assignee, taskId: task.uuid },
-        "Spawning agent for task (mock)",
-      );
-    }
+    await this.taskExecutor.execute(task, jobLogger);
 
-    // Placeholder: actual processing would happen here
-    jobLogger.debug({ taskId: task.uuid }, "Task processing complete");
-
-    // Move task to review for human verification
     await this.engineClient.updateTaskStatus(task.uuid, "review");
     jobLogger.debug({ taskId: task.uuid }, "Task moved to review");
   }

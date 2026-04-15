@@ -63,6 +63,8 @@ Agents:
 
 Execution happens inside **isolated Docker environments**.
 
+> **Current MVP status:** Agent execution is pluggable through a `TaskExecutor` interface in the Worker. The default implementation (`MockTaskExecutor`) is a placeholder that logs the task and resolves — real container-based execution will drop in behind the same interface.
+
 ### Git workflow automation
 
 Casper Engine automatically handles:

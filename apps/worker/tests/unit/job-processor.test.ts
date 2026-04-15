@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 import { EngineClient } from "../../src/engine-client.js";
 import { JobProcessor } from "../../src/job-processor.js";
+import type { TaskExecutor } from "../../src/task-executor.js";
 
 function createMockEngineClient(): EngineClient {
   return {
@@ -16,19 +17,25 @@ function createMockEngineClient(): EngineClient {
   } as unknown as EngineClient;
 }
 
+function createMockTaskExecutor(): TaskExecutor {
+  return { execute: vi.fn().mockResolvedValue(undefined) };
+}
+
 const WORKER_ID = "550e8400-e29b-41d4-a716-446655440004";
 
 describe("JobProcessor", () => {
   describe("process", () => {
     it("should mark job in_progress, execute task, then move task to review", async () => {
       const mockClient = createMockEngineClient();
+      const mockExecutor = createMockTaskExecutor();
 
-      vi.mocked(mockClient.getTask).mockResolvedValue({
+      const fetchedTask = {
         uuid: "task-1",
         title: "Test Task",
-        status: "in_progress",
+        status: "in_progress" as const,
         assignee: "/agents/agent-1",
-      });
+      };
+      vi.mocked(mockClient.getTask).mockResolvedValue(fetchedTask);
       vi.mocked(mockClient.updateJobStatus)
         .mockResolvedValueOnce({
           uuid: "job-1",
@@ -57,7 +64,7 @@ describe("JobProcessor", () => {
         assignee: "/agents/agent-1",
       });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, mockExecutor);
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -73,6 +80,8 @@ describe("JobProcessor", () => {
       expect(mockClient.updateJobStatus).toHaveBeenNthCalledWith(1, "job-1", "in_progress");
       expect(mockClient.updateJobStatus).toHaveBeenNthCalledWith(2, "job-1", "completed");
       expect(mockClient.getTask).toHaveBeenCalledWith("task-1");
+      expect(mockExecutor.execute).toHaveBeenCalledTimes(1);
+      expect(mockExecutor.execute).toHaveBeenCalledWith(fetchedTask, expect.anything());
       expect(mockClient.updateTaskStatus).toHaveBeenCalledTimes(1);
       expect(mockClient.updateTaskStatus).toHaveBeenCalledWith("task-1", "review");
     });
@@ -90,7 +99,7 @@ describe("JobProcessor", () => {
         updatedAt: "2026-01-01T00:00:00Z",
       });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
 
       await expect(processor.process({
         uuid: "job-1",
@@ -102,6 +111,37 @@ describe("JobProcessor", () => {
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
       })).rejects.toThrow("execute_task job must have a task");
+    });
+
+    it("should release task to ready when executor rejects", async () => {
+      const mockClient = createMockEngineClient();
+      const mockExecutor = createMockTaskExecutor();
+      vi.mocked(mockExecutor.execute).mockRejectedValue(new Error("executor boom"));
+
+      vi.mocked(mockClient.getTask).mockResolvedValue({
+        uuid: "task-1",
+        title: "Test Task",
+        status: "in_progress",
+        assignee: "/agents/agent-1",
+      });
+      vi.mocked(mockClient.updateJobStatus).mockResolvedValue({} as never);
+      vi.mocked(mockClient.updateTaskStatus).mockResolvedValue({} as never);
+
+      const processor = new JobProcessor(mockClient, mockExecutor);
+
+      await expect(processor.process({
+        uuid: "job-1",
+        worker: `/workers/${WORKER_ID}`,
+        type: "execute_task",
+        status: "ready",
+        task: "/tasks/task-1",
+        failReason: null,
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      })).rejects.toThrow("executor boom");
+
+      expect(mockClient.updateJobStatus).toHaveBeenCalledWith("job-1", "failed", "executor boom");
+      expect(mockClient.updateTaskStatus).toHaveBeenCalledWith("task-1", "ready");
     });
 
     it("should mark job as failed and release task for retry on error", async () => {
@@ -136,7 +176,7 @@ describe("JobProcessor", () => {
         assignee: "/agents/agent-1",
       });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
 
       await expect(processor.process({
         uuid: "job-1",
@@ -177,7 +217,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -218,7 +258,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -257,7 +297,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient);
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,

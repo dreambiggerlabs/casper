@@ -4,6 +4,7 @@ import { hostname } from "os";
 import { EngineClient } from "./engine-client.js";
 import { JobProcessor } from "./job-processor.js";
 import { PollingLoop } from "./polling-loop.js";
+import { MockTaskExecutor } from "./task-executor.js";
 import { loadWorkerState, saveWorkerState } from "./worker-state.js";
 import { logger } from "./logging/logger.js";
 
@@ -38,7 +39,8 @@ async function main(): Promise<void> {
     await engineClient.heartbeat(workerState.workerId);
   }
 
-  const jobProcessor = new JobProcessor(engineClient);
+  const taskExecutor = new MockTaskExecutor();
+  const jobProcessor = new JobProcessor(engineClient, taskExecutor);
   const pollingLoop = new PollingLoop(
     engineClient,
     jobProcessor,
