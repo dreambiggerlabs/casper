@@ -192,8 +192,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   ): Promise<WorkerJob[]> {
     const conditions: SQL[] = [eq(worker.uuid, workerId)];
     if (status) conditions.push(eq(workerJob.status, status));
-    const query =
-      conditions.length === 1 ? conditions[0] : and(...conditions);
+    const query = conditions.length === 1 ? conditions[0] : and(...conditions);
     const rows = await this.baseQuery().where(query);
 
     return rows.map(toWorkerJob);
@@ -211,8 +210,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   async countJobs(workerId: string, status?: JobStatus): Promise<number> {
     const conditions: SQL[] = [eq(worker.uuid, workerId)];
     if (status) conditions.push(eq(workerJob.status, status));
-    const where =
-      conditions.length === 1 ? conditions[0] : and(...conditions);
+    const where = conditions.length === 1 ? conditions[0] : and(...conditions);
     const rows = await this.database
       .select({ count: drizzleCount() })
       .from(workerJob)
@@ -230,8 +228,7 @@ export class DrizzleWorkerJobRepository implements WorkerJobRepository {
   }): Promise<WorkerJob[]> {
     const conditions: SQL[] = [eq(worker.uuid, params.workerId)];
     if (params.status) conditions.push(eq(workerJob.status, params.status));
-    const where =
-      conditions.length === 1 ? conditions[0] : and(...conditions);
+    const where = conditions.length === 1 ? conditions[0] : and(...conditions);
     const rows = await this.baseQuery()
       .where(where)
       .limit(params.limit)

@@ -131,7 +131,7 @@ describe("PollingLoop", () => {
         uuid: "task-claimed",
         title: "Claimed task",
         status: "in_progress" as const,
-        agentId: "agent-1",
+        assignee: "/agents/agent-1",
       },
     };
 

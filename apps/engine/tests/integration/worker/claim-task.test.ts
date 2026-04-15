@@ -13,6 +13,7 @@ import {
 import {
   createTestProject,
   createTestAgent,
+  createTestUser,
   createTestTask,
   createTestWorker,
   resetFixtureCounter,
@@ -40,7 +41,7 @@ describe("claimTask (integration)", () => {
     const worker = await createTestWorker(db);
     const task = await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -64,7 +65,7 @@ describe("claimTask (integration)", () => {
     // Task in backlog (not ready)
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "backlog",
     });
 
@@ -79,11 +80,10 @@ describe("claimTask (integration)", () => {
     const project = await createTestProject(db);
     const worker = await createTestWorker(db);
 
-    // Task is ready but has NO agent assigned
+    // Task is ready but has NO assignee
     await createTestTask(db, {
       projectId: project.uuid,
       status: "ready",
-      // no agentId
     });
 
     const result = await service.claimTask({
@@ -93,6 +93,54 @@ describe("claimTask (integration)", () => {
     expect(result).toBeNull();
   });
 
+  it("should NOT claim a ready task assigned to a user", async () => {
+    const project = await createTestProject(db);
+    const user = await createTestUser(db);
+    const worker = await createTestWorker(db);
+
+    await createTestTask(db, {
+      projectId: project.uuid,
+      assignee: { type: "user", uuid: user.uuid },
+      status: "ready",
+    });
+
+    const result = await service.claimTask({
+      worker: `/workers/${worker.uuid}`,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("should skip user-assigned ready tasks and claim agent-assigned tasks", async () => {
+    const project = await createTestProject(db);
+    const agent = await createTestAgent(db);
+    const user = await createTestUser(db);
+    const worker = await createTestWorker(db);
+
+    // Older user task (should be skipped)
+    await createTestTask(db, {
+      title: "User task",
+      projectId: project.uuid,
+      assignee: { type: "user", uuid: user.uuid },
+      status: "ready",
+    });
+
+    const agentTask = await createTestTask(db, {
+      title: "Agent task",
+      projectId: project.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
+      status: "ready",
+    });
+
+    const result = await service.claimTask({
+      worker: `/workers/${worker.uuid}`,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.task.uuid).toBe(agentTask.uuid);
+    expect(result!.task.assignee).toBe(`/agents/${agent.uuid}`);
+  });
+
   it("should not claim a task that is already in_progress", async () => {
     const project = await createTestProject(db);
     const agent = await createTestAgent(db);
@@ -100,7 +148,7 @@ describe("claimTask (integration)", () => {
 
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "in_progress",
     });
 
@@ -120,19 +168,19 @@ describe("claimTask (integration)", () => {
     const task1 = await createTestTask(db, {
       title: "First",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
     await createTestTask(db, {
       title: "Second",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
     await createTestTask(db, {
       title: "Third",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -153,7 +201,7 @@ describe("claimTask (integration)", () => {
     // Only one ready task
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -179,19 +227,19 @@ describe("claimTask (integration)", () => {
     await createTestTask(db, {
       title: "T1",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
     await createTestTask(db, {
       title: "T2",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
     await createTestTask(db, {
       title: "T3",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -235,7 +283,7 @@ describe("claimTask (integration)", () => {
     const assignedTask = await createTestTask(db, {
       title: "Assigned",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -245,5 +293,6 @@ describe("claimTask (integration)", () => {
 
     expect(result).not.toBeNull();
     expect(result!.task.uuid).toBe(assignedTask.uuid);
+    expect(result!.task.assignee).toBe(`/agents/${agent.uuid}`);
   });
 });

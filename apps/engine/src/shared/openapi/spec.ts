@@ -225,6 +225,138 @@ export const openApiSpec = {
         },
       },
     },
+    "/users": {
+      post: {
+        tags: ["Users"],
+        summary: "Create a user",
+        operationId: "createUser",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CreateUser" },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "User created",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
+            },
+          },
+          "400": {
+            description: "Validation error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+      get: {
+        tags: ["Users"],
+        summary: "List all users",
+        operationId: "listUsers",
+        parameters: [
+          { $ref: "#/components/parameters/page" },
+          { $ref: "#/components/parameters/itemsPerPage" },
+        ],
+        responses: {
+          "200": {
+            description: "Paginated collection of users",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/HydraCollection" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/users/{uuid}": {
+      get: {
+        tags: ["Users"],
+        summary: "Get a user by UUID",
+        operationId: "getUser",
+        parameters: [
+          {
+            name: "uuid",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "User found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
+            },
+          },
+          "404": {
+            description: "User not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+      patch: {
+        tags: ["Users"],
+        summary: "Update a user",
+        operationId: "updateUser",
+        parameters: [
+          {
+            name: "uuid",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateUser" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "User updated",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
+            },
+          },
+          "400": {
+            description: "Validation error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+          "404": {
+            description: "User not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/workers": {
       post: {
         tags: ["Workers"],
@@ -569,13 +701,15 @@ export const openApiSpec = {
             },
           },
           {
-            name: "agent",
+            name: "assignee",
             in: "query",
             required: false,
-            description: "Filter by agent IRI (e.g. /agents/{uuid})",
+            description:
+              "Filter by assignee IRI (e.g. /agents/{uuid} or /users/{uuid})",
             schema: {
               type: "string",
-              description: "Agent IRI in the format /agents/{uuid}",
+              description:
+                "Assignee IRI in the format /agents/{uuid} or /users/{uuid}",
             },
           },
           { $ref: "#/components/parameters/page" },
@@ -676,7 +810,7 @@ export const openApiSpec = {
     "/tasks/{uuid}/assign": {
       post: {
         tags: ["Tasks"],
-        summary: "Assign an agent to a task",
+        summary: "Assign a task to an agent or user",
         operationId: "assignTask",
         parameters: [
           {
@@ -712,7 +846,7 @@ export const openApiSpec = {
             },
           },
           "404": {
-            description: "Task or agent not found",
+            description: "Task, agent, or user not found",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Error" },
@@ -915,6 +1049,52 @@ export const openApiSpec = {
           },
         },
       },
+      User: {
+        type: "object",
+        required: ["@id", "uuid", "name", "email", "createdAt", "updatedAt"],
+        properties: {
+          "@id": {
+            type: "string",
+            description: "Resource IRI (e.g. /users/{uuid})",
+          },
+          uuid: { type: "string", format: "uuid" },
+          name: { type: "string", maxLength: 255 },
+          email: { type: "string", format: "email", maxLength: 255 },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      CreateUser: {
+        type: "object",
+        required: ["name", "email"],
+        properties: {
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 255,
+          },
+          email: {
+            type: "string",
+            format: "email",
+            maxLength: 255,
+          },
+        },
+      },
+      UpdateUser: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 255,
+          },
+          email: {
+            type: "string",
+            format: "email",
+            maxLength: 255,
+          },
+        },
+      },
       Worker: {
         type: "object",
         required: [
@@ -1061,9 +1241,10 @@ export const openApiSpec = {
             type: "string",
             enum: ["backlog", "ready", "in_progress", "review", "completed"],
           },
-          agent: {
+          assignee: {
             type: ["string", "null"],
-            description: "Agent IRI (e.g. /agents/{uuid}) or null",
+            description:
+              "Assignee IRI — /agents/{uuid} or /users/{uuid}, or null",
           },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
@@ -1108,11 +1289,12 @@ export const openApiSpec = {
       },
       AssignTask: {
         type: "object",
-        required: ["agent"],
+        required: ["assignee"],
         properties: {
-          agent: {
+          assignee: {
             type: "string",
-            description: "Agent IRI (e.g. /agents/{uuid})",
+            description:
+              "Assignee IRI — either /agents/{uuid} or /users/{uuid}",
           },
         },
       },

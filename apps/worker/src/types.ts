@@ -16,7 +16,7 @@ export interface Task {
   uuid: string;
   title: string;
   status: TaskStatus;
-  agentId: string | null;
+  assignee: string | null;
 }
 
 export interface Worker {

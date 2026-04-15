@@ -75,10 +75,10 @@ export class JobProcessor {
       "Executing task",
     );
 
-    // Spawn agent (mock)
-    if (task.agentId) {
+    // Spawn agent (mock) — only execute_task jobs claim agent-assigned tasks
+    if (task.assignee) {
       jobLogger.info(
-        { agentId: task.agentId, taskId: task.uuid },
+        { assignee: task.assignee, taskId: task.uuid },
         "Spawning agent for task (mock)",
       );
     }

@@ -6,7 +6,13 @@ import type {
   assignTaskSchema,
   updateTaskStatusSchema,
   TaskStatus,
+  AssigneeType,
 } from "./task.schema.js";
+
+export interface AssigneeRef {
+  type: AssigneeType;
+  uuid: string;
+}
 
 export interface Task {
   "@id": string;
@@ -16,7 +22,7 @@ export interface Task {
   project: string;
   parent: string | null;
   status: TaskStatus;
-  agent: string | null;
+  assignee: string | null;
   createdAt: Date;
   updatedAt: Date | null;
 }
@@ -29,18 +35,21 @@ export type UpdateTaskStatus = z.infer<typeof updateTaskStatusSchema>;
 export interface TaskReader {
   findByUuid(uuid: string): Promise<Task | undefined>;
   findByProjectId(projectId: string): Promise<Task[]>;
-  findByStatusAndAgentId(status: TaskStatus, agentId: string): Promise<Task[]>;
+  findByStatusAndAssignee(
+    status: TaskStatus,
+    assignee: AssigneeRef,
+  ): Promise<Task[]>;
   findAll(): Promise<Task[]>;
   count(filters?: {
     status?: TaskStatus;
-    agentId?: string;
+    assignee?: AssigneeRef;
     projectId?: string;
   }): Promise<number>;
   findPaginated(params: {
     limit: number;
     offset: number;
     status?: TaskStatus;
-    agentId?: string;
+    assignee?: AssigneeRef;
     projectId?: string;
   }): Promise<Task[]>;
 }
@@ -48,7 +57,7 @@ export interface TaskReader {
 export interface TaskWriter {
   create(data: CreateTask): Promise<Task>;
   update(uuid: string, data: UpdateTask): Promise<Task | undefined>;
-  assign(uuid: string, agentId: string): Promise<Task | undefined>;
+  assign(uuid: string, assignee: AssigneeRef): Promise<Task | undefined>;
   updateStatus(uuid: string, status: TaskStatus): Promise<Task | undefined>;
 }
 

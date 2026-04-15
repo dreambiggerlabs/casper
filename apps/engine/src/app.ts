@@ -13,6 +13,10 @@ import { DrizzleAgentRepository } from "./agent/agent.repository.js";
 import { AgentService } from "./agent/agent.service.js";
 import { createAgentRoutes } from "./agent/agent.routes.js";
 
+import { DrizzleUserRepository } from "./user/user.repository.js";
+import { UserService } from "./user/user.service.js";
+import { createUserRoutes } from "./user/user.routes.js";
+
 import {
   DrizzleWorkerRepository,
   DrizzleWorkerJobRepository,
@@ -36,6 +40,9 @@ export function createApp(db: Database) {
   const agentRepository = new DrizzleAgentRepository(db);
   const agentService = new AgentService(agentRepository);
 
+  const userRepository = new DrizzleUserRepository(db);
+  const userService = new UserService(userRepository);
+
   const workerRepository = new DrizzleWorkerRepository(db);
   const workerJobRepository = new DrizzleWorkerJobRepository(db);
   const workerService = new WorkerService(
@@ -49,11 +56,13 @@ export function createApp(db: Database) {
     taskRepository,
     projectRepository,
     agentRepository,
+    userRepository,
   );
 
   // Routes
   app.use(createProjectRoutes(projectService));
   app.use(createAgentRoutes(agentService));
+  app.use(createUserRoutes(userService));
   app.use(createWorkerRoutes(workerService));
   app.use(createTaskRoutes(taskService));
 

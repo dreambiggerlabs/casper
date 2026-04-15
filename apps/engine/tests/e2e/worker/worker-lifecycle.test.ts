@@ -71,7 +71,7 @@ describe("Worker lifecycle (E2E)", () => {
     const agent = await createTestAgent(db);
     const task = await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -148,7 +148,7 @@ describe("Worker lifecycle (E2E)", () => {
     const agent = await createTestAgent(db);
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -207,7 +207,7 @@ describe("Worker lifecycle (E2E)", () => {
     const agent = await createTestAgent(db);
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 
@@ -241,7 +241,7 @@ describe("Worker lifecycle (E2E)", () => {
     const agent = await createTestAgent(db);
     await createTestTask(db, {
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 

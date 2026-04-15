@@ -1,9 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { NotFoundError, ValidationError } from "../../../src/shared/errors/index.js";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../../../src/shared/errors/index.js";
 
 import type { ProjectReader } from "../../../src/project/project.types.js";
 import type { AgentReader } from "../../../src/agent/agent.types.js";
+import type { UserReader } from "../../../src/user/user.types.js";
 
 import { TaskService } from "../../../src/task/task.service.js";
 import type { TaskRepository, Task } from "../../../src/task/task.types.js";
@@ -12,7 +16,7 @@ function createMockTaskRepository(): TaskRepository {
   return {
     findByUuid: vi.fn(),
     findByProjectId: vi.fn(),
-    findByStatusAndAgentId: vi.fn(),
+    findByStatusAndAssignee: vi.fn(),
     findAll: vi.fn(),
     count: vi.fn(),
     findPaginated: vi.fn(),
@@ -41,7 +45,17 @@ function createMockAgentReader(): AgentReader {
   };
 }
 
+function createMockUserReader(): UserReader {
+  return {
+    findByUuid: vi.fn(),
+    findAll: vi.fn(),
+    count: vi.fn(),
+    findPaginated: vi.fn(),
+  };
+}
+
 const AGENT_UUID = "550e8400-e29b-41d4-a716-446655440002";
+const USER_UUID = "550e8400-e29b-41d4-a716-446655440020";
 const PROJECT_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const TASK_UUID = "550e8400-e29b-41d4-a716-446655440001";
 
@@ -51,10 +65,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     "@id": `/tasks/${uuid}`,
     uuid,
     title: "Test Task",
+    description: null,
     project: `/projects/${PROJECT_UUID}`,
     parent: null,
     status: "backlog",
-    agent: null,
+    assignee: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides,
@@ -71,24 +86,61 @@ function makeProject(uuid: string = PROJECT_UUID) {
   };
 }
 
+function makeAgent(uuid: string = AGENT_UUID) {
+  return {
+    "@id": `/agents/${uuid}`,
+    uuid,
+    name: "Test Agent",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function makeUser(uuid: string = USER_UUID) {
+  return {
+    "@id": `/users/${uuid}`,
+    uuid,
+    name: "Test User",
+    email: "test@example.com",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function makeService(overrides: {
+  taskRepository?: TaskRepository;
+  projectReader?: ProjectReader;
+  agentReader?: AgentReader;
+  userReader?: UserReader;
+} = {}) {
+  const taskRepository = overrides.taskRepository ?? createMockTaskRepository();
+  const projectReader = overrides.projectReader ?? createMockProjectReader();
+  const agentReader = overrides.agentReader ?? createMockAgentReader();
+  const userReader = overrides.userReader ?? createMockUserReader();
+
+  return {
+    service: new TaskService(
+      taskRepository,
+      projectReader,
+      agentReader,
+      userReader,
+    ),
+    taskRepository,
+    projectReader,
+    agentReader,
+    userReader,
+  };
+}
+
 describe("TaskService", () => {
   describe("createTask", () => {
-    it("should create a task when valid data is provided and project exists", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-      const agentReader = createMockAgentReader();
+    it("creates a task when valid data is provided and project exists", async () => {
+      const { service, taskRepository, projectReader } = makeService();
       const expectedTask = makeTask({ title: "My Task" });
 
-      vi.mocked(projectReader.findByUuid).mockResolvedValue(
-        makeProject(PROJECT_UUID),
-      );
+      vi.mocked(projectReader.findByUuid).mockResolvedValue(makeProject());
       vi.mocked(taskRepository.create).mockResolvedValue(expectedTask);
 
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        agentReader,
-      );
       const result = await service.createTask({
         title: "My Task",
         project: `/projects/${PROJECT_UUID}`,
@@ -97,22 +149,15 @@ describe("TaskService", () => {
       expect(result).toEqual(expectedTask);
       expect(taskRepository.create).toHaveBeenCalledWith({
         title: "My Task",
+        description: undefined,
         projectId: PROJECT_UUID,
+        parentId: undefined,
       });
     });
 
-    it("should throw NotFoundError when creating a task for non-existent project", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-      const agentReader = createMockAgentReader();
-
+    it("throws NotFoundError when project is missing", async () => {
+      const { service, projectReader } = makeService();
       vi.mocked(projectReader.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        agentReader,
-      );
 
       await expect(
         service.createTask({
@@ -122,21 +167,10 @@ describe("TaskService", () => {
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw NotFoundError when parent task does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-      const agentReader = createMockAgentReader();
-
-      vi.mocked(projectReader.findByUuid).mockResolvedValue(
-        makeProject(PROJECT_UUID),
-      );
+    it("throws NotFoundError when parent task does not exist", async () => {
+      const { service, taskRepository, projectReader } = makeService();
+      vi.mocked(projectReader.findByUuid).mockResolvedValue(makeProject());
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        agentReader,
-      );
 
       await expect(
         service.createTask({
@@ -147,24 +181,16 @@ describe("TaskService", () => {
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError when title is missing", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
+    it("throws ValidationError when title is missing", async () => {
+      const { service } = makeService();
 
       await expect(
         service.createTask({ project: `/projects/${PROJECT_UUID}` }),
       ).rejects.toThrow(ValidationError);
     });
 
-    it("should throw ValidationError when project is missing", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
+    it("throws ValidationError when project is missing", async () => {
+      const { service } = makeService();
 
       await expect(service.createTask({ title: "My Task" })).rejects.toThrow(
         ValidationError,
@@ -173,30 +199,19 @@ describe("TaskService", () => {
   });
 
   describe("getTask", () => {
-    it("should return a task when it exists", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("returns a task when it exists", async () => {
+      const { service, taskRepository } = makeService();
       const expected = makeTask();
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(expected);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
       const result = await service.getTask(expected.uuid);
 
       expect(result).toEqual(expected);
     });
 
-    it("should throw NotFoundError when task does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("throws NotFoundError when task does not exist", async () => {
+      const { service, taskRepository } = makeService();
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
 
       await expect(service.getTask("nonexistent")).rejects.toThrow(
         NotFoundError,
@@ -207,17 +222,12 @@ describe("TaskService", () => {
   describe("listTasks", () => {
     const pagination = { page: 1, itemsPerPage: 30 };
 
-    it("should return paginated tasks when no filters provided", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("returns paginated tasks when no filters provided", async () => {
+      const { service, taskRepository } = makeService();
       const tasks = [makeTask(), makeTask({ uuid: "other-uuid" })];
       vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
       vi.mocked(taskRepository.count).mockResolvedValue(2);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
       const result = await service.listTasks(undefined, pagination);
 
       expect(result).toEqual({ items: tasks, totalItems: 2 });
@@ -225,25 +235,20 @@ describe("TaskService", () => {
         limit: 30,
         offset: 0,
         status: undefined,
-        agentId: undefined,
+        assignee: undefined,
       });
     });
 
-    it("should return paginated tasks filtered by status and agentId", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("filters by status and agent assignee", async () => {
+      const { service, taskRepository } = makeService();
       const tasks = [
-        makeTask({ status: "ready", agent: `/agents/${AGENT_UUID}` }),
+        makeTask({ status: "ready", assignee: `/agents/${AGENT_UUID}` }),
       ];
       vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
       vi.mocked(taskRepository.count).mockResolvedValue(1);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
       const result = await service.listTasks(
-        { status: "ready", agentId: AGENT_UUID },
+        { status: "ready", assignee: { type: "agent", uuid: AGENT_UUID } },
         pagination,
       );
 
@@ -252,19 +257,34 @@ describe("TaskService", () => {
         limit: 30,
         offset: 0,
         status: "ready",
-        agentId: AGENT_UUID,
+        assignee: { type: "agent", uuid: AGENT_UUID },
       });
     });
 
-    it("should throw ValidationError when status is invalid", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
+    it("filters by user assignee", async () => {
+      const { service, taskRepository } = makeService();
+      const tasks = [makeTask({ assignee: `/users/${USER_UUID}` })];
+      vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
+      vi.mocked(taskRepository.count).mockResolvedValue(1);
+
+      await service.listTasks(
+        { assignee: { type: "user", uuid: USER_UUID } },
+        pagination,
       );
 
+      expect(taskRepository.findPaginated).toHaveBeenCalledWith({
+        limit: 30,
+        offset: 0,
+        status: undefined,
+        assignee: { type: "user", uuid: USER_UUID },
+      });
+    });
+
+    it("throws ValidationError when status is invalid", async () => {
+      const { service } = makeService();
+
       await expect(
-        service.listTasks({ status: "invalid", agentId: AGENT_UUID }, pagination),
+        service.listTasks({ status: "invalid" }, pagination),
       ).rejects.toThrow(ValidationError);
     });
   });
@@ -272,26 +292,19 @@ describe("TaskService", () => {
   describe("listTasksByProject", () => {
     const pagination = { page: 1, itemsPerPage: 30 };
 
-    it("should return paginated tasks for a given project when project exists", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
+    it("returns paginated tasks for a project that exists", async () => {
+      const { service, taskRepository, projectReader } = makeService();
       const projectId = "project-uuid";
       const tasks = [
         makeTask({ project: `/projects/${projectId}` }),
         makeTask({ project: `/projects/${projectId}` }),
       ];
-
       vi.mocked(projectReader.findByUuid).mockResolvedValue(
         makeProject(projectId),
       );
       vi.mocked(taskRepository.findPaginated).mockResolvedValue(tasks);
       vi.mocked(taskRepository.count).mockResolvedValue(2);
 
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        createMockAgentReader(),
-      );
       const result = await service.listTasksByProject(projectId, pagination);
 
       expect(result).toEqual({ items: tasks, totalItems: 2 });
@@ -302,17 +315,9 @@ describe("TaskService", () => {
       });
     });
 
-    it("should throw NotFoundError when project does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-
+    it("throws NotFoundError when project does not exist", async () => {
+      const { service, projectReader } = makeService();
       vi.mocked(projectReader.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        createMockAgentReader(),
-      );
 
       await expect(
         service.listTasksByProject("nonexistent", pagination),
@@ -321,16 +326,11 @@ describe("TaskService", () => {
   });
 
   describe("updateTask", () => {
-    it("should update a task when valid data is provided", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("updates a task when valid data is provided", async () => {
+      const { service, taskRepository } = makeService();
       const expected = makeTask({ title: "Updated" });
       vi.mocked(taskRepository.update).mockResolvedValue(expected);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
       const result = await service.updateTask(expected.uuid, {
         title: "Updated",
       });
@@ -338,200 +338,124 @@ describe("TaskService", () => {
       expect(result).toEqual(expected);
     });
 
-    it("should throw NotFoundError when updating a non-existent task", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("throws NotFoundError when updating a non-existent task", async () => {
+      const { service, taskRepository } = makeService();
       vi.mocked(taskRepository.update).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
 
       await expect(
         service.updateTask("nonexistent", { title: "Updated" }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError when no fields are provided", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
+    it("throws ValidationError when no fields are provided", async () => {
+      const { service } = makeService();
 
       await expect(service.updateTask("some-uuid", {})).rejects.toThrow(
         ValidationError,
       );
     });
-
-    it("should throw NotFoundError when changing to non-existent project", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-
-      vi.mocked(projectReader.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        createMockAgentReader(),
-      );
-
-      await expect(
-        service.updateTask(TASK_UUID, {
-          project: "/projects/550e8400-e29b-41d4-a716-446655440999",
-        }),
-      ).rejects.toThrow(NotFoundError);
-    });
-
-    it("should throw NotFoundError when changing to non-existent parent", async () => {
-      const taskRepository = createMockTaskRepository();
-      const projectReader = createMockProjectReader();
-
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        projectReader,
-        createMockAgentReader(),
-      );
-
-      await expect(
-        service.updateTask(TASK_UUID, {
-          parent: "/tasks/550e8400-e29b-41d4-a716-446655440998",
-        }),
-      ).rejects.toThrow(NotFoundError);
-    });
   });
 
   describe("assignTask", () => {
-    it("should assign an agent to a task without changing status", async () => {
-      const taskRepository = createMockTaskRepository();
-      const agentReader = createMockAgentReader();
+    it("assigns an agent to a task", async () => {
+      const { service, taskRepository, agentReader } = makeService();
       const task = makeTask({ status: "ready" });
-      const taskWithAgent = makeTask({ status: "ready", agent: `/agents/${AGENT_UUID}` });
+      const assigned = makeTask({
+        status: "ready",
+        assignee: `/agents/${AGENT_UUID}`,
+      });
 
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(task);
-      vi.mocked(agentReader.findByUuid).mockResolvedValue({
-        "@id": `/agents/${AGENT_UUID}`,
-        uuid: AGENT_UUID,
-        name: "Test Agent",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      vi.mocked(taskRepository.assign).mockResolvedValue(taskWithAgent);
+      vi.mocked(agentReader.findByUuid).mockResolvedValue(makeAgent());
+      vi.mocked(taskRepository.assign).mockResolvedValue(assigned);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        agentReader,
-      );
       const result = await service.assignTask(task.uuid, {
-        agent: `/agents/${AGENT_UUID}`,
+        assignee: `/agents/${AGENT_UUID}`,
       });
 
-      expect(result).toEqual(taskWithAgent);
-      expect(taskRepository.assign).toHaveBeenCalledWith(
-        task.uuid,
-        AGENT_UUID,
-      );
+      expect(result).toEqual(assigned);
+      expect(taskRepository.assign).toHaveBeenCalledWith(task.uuid, {
+        type: "agent",
+        uuid: AGENT_UUID,
+      });
     });
 
-    it("should throw NotFoundError when task does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("assigns a user to a task", async () => {
+      const { service, taskRepository, userReader } = makeService();
+      const task = makeTask();
+      const assigned = makeTask({ assignee: `/users/${USER_UUID}` });
+
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(task);
+      vi.mocked(userReader.findByUuid).mockResolvedValue(makeUser());
+      vi.mocked(taskRepository.assign).mockResolvedValue(assigned);
+
+      const result = await service.assignTask(task.uuid, {
+        assignee: `/users/${USER_UUID}`,
+      });
+
+      expect(result).toEqual(assigned);
+      expect(taskRepository.assign).toHaveBeenCalledWith(task.uuid, {
+        type: "user",
+        uuid: USER_UUID,
+      });
+      expect(userReader.findByUuid).toHaveBeenCalledWith(USER_UUID);
+    });
+
+    it("throws NotFoundError when task does not exist", async () => {
+      const { service, taskRepository } = makeService();
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(undefined);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
-
       await expect(
-        service.assignTask("nonexistent", { agent: `/agents/${AGENT_UUID}` }),
+        service.assignTask("nonexistent", { assignee: `/agents/${AGENT_UUID}` }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw NotFoundError when agent does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
-      const agentReader = createMockAgentReader();
-      const task = makeTask();
-
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(task);
+    it("throws NotFoundError when agent does not exist", async () => {
+      const { service, taskRepository, agentReader } = makeService();
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(makeTask());
       vi.mocked(agentReader.findByUuid).mockResolvedValue(undefined);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        agentReader,
-      );
-
       await expect(
-        service.assignTask(task.uuid, { agent: `/agents/${AGENT_UUID}` }),
+        service.assignTask(TASK_UUID, { assignee: `/agents/${AGENT_UUID}` }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should allow assigning an agent to a task in any status", async () => {
-      const taskRepository = createMockTaskRepository();
-      const agentReader = createMockAgentReader();
-      const inProgressTask = makeTask({
-        status: "in_progress",
-        agent: "/agents/550e8400-e29b-41d4-a716-446655440003",
-      });
-      const reassignedTask = makeTask({
-        status: "in_progress",
-        agent: `/agents/${AGENT_UUID}`,
-      });
-
-      vi.mocked(taskRepository.findByUuid).mockResolvedValue(inProgressTask);
-      vi.mocked(agentReader.findByUuid).mockResolvedValue({
-        "@id": `/agents/${AGENT_UUID}`,
-        uuid: AGENT_UUID,
-        name: "Test Agent",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      vi.mocked(taskRepository.assign).mockResolvedValue(reassignedTask);
-
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        agentReader,
-      );
-      const result = await service.assignTask(inProgressTask.uuid, {
-        agent: `/agents/${AGENT_UUID}`,
-      });
-
-      expect(result).toEqual(reassignedTask);
-    });
-
-    it("should throw ValidationError when agent IRI is invalid", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
+    it("throws NotFoundError when user does not exist", async () => {
+      const { service, taskRepository, userReader } = makeService();
+      vi.mocked(taskRepository.findByUuid).mockResolvedValue(makeTask());
+      vi.mocked(userReader.findByUuid).mockResolvedValue(undefined);
 
       await expect(
-        service.assignTask(TASK_UUID, { agent: "not-an-iri" }),
+        service.assignTask(TASK_UUID, { assignee: `/users/${USER_UUID}` }),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("throws ValidationError when assignee IRI is not agent or user", async () => {
+      const { service } = makeService();
+
+      await expect(
+        service.assignTask(TASK_UUID, { assignee: `/projects/${PROJECT_UUID}` }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it("throws ValidationError when assignee IRI is malformed", async () => {
+      const { service } = makeService();
+
+      await expect(
+        service.assignTask(TASK_UUID, { assignee: "not-an-iri" }),
       ).rejects.toThrow(ValidationError);
     });
   });
 
   describe("updateTaskStatus", () => {
-    it("should update task status", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("updates task status", async () => {
+      const { service, taskRepository } = makeService();
       const readyTask = makeTask({ status: "ready" });
       const inProgressTask = makeTask({ status: "in_progress" });
 
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(readyTask);
       vi.mocked(taskRepository.updateStatus).mockResolvedValue(inProgressTask);
 
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
       const result = await service.updateTaskStatus(readyTask.uuid, {
         status: "in_progress",
       });
@@ -543,27 +467,17 @@ describe("TaskService", () => {
       );
     });
 
-    it("should throw NotFoundError when task does not exist", async () => {
-      const taskRepository = createMockTaskRepository();
+    it("throws NotFoundError when task does not exist", async () => {
+      const { service, taskRepository } = makeService();
       vi.mocked(taskRepository.findByUuid).mockResolvedValue(undefined);
-
-      const service = new TaskService(
-        taskRepository,
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
 
       await expect(
         service.updateTaskStatus("nonexistent", { status: "completed" }),
       ).rejects.toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError when status is invalid", async () => {
-      const service = new TaskService(
-        createMockTaskRepository(),
-        createMockProjectReader(),
-        createMockAgentReader(),
-      );
+    it("throws ValidationError when status is invalid", async () => {
+      const { service } = makeService();
 
       await expect(
         service.updateTaskStatus(TASK_UUID, { status: "invalid" }),

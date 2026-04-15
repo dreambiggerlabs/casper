@@ -9,6 +9,7 @@ import {
 import {
   createTestProject,
   createTestAgent,
+  createTestUser,
   resetFixtureCounter,
 } from "../../helpers/fixtures.js";
 
@@ -38,7 +39,7 @@ describe("DrizzleTaskRepository", () => {
       expect(task.title).toBe("My Task");
       expect(task.project).toBe(`/projects/${project.uuid}`);
       expect(task.status).toBe("backlog");
-      expect(task.agent).toBeNull();
+      expect(task.assignee).toBeNull();
       expect(task.parent).toBeNull();
     });
 
@@ -88,8 +89,8 @@ describe("DrizzleTaskRepository", () => {
     });
   });
 
-  describe("findByStatusAndAgentId", () => {
-    it("should filter by both status and agent", async () => {
+  describe("findByStatusAndAssignee", () => {
+    it("should filter by both status and agent assignee", async () => {
       const project = await createTestProject(db);
       const agent = await createTestAgent(db);
 
@@ -97,15 +98,46 @@ describe("DrizzleTaskRepository", () => {
         title: "Assigned Ready",
         projectId: project.uuid,
       });
-      await repo.assign(task.uuid, agent.uuid);
+      await repo.assign(task.uuid, { type: "agent", uuid: agent.uuid });
       await repo.updateStatus(task.uuid, "ready");
 
       // Another task, different status
       await repo.create({ title: "Backlog", projectId: project.uuid });
 
-      const results = await repo.findByStatusAndAgentId("ready", agent.uuid);
+      const results = await repo.findByStatusAndAssignee("ready", {
+        type: "agent",
+        uuid: agent.uuid,
+      });
       expect(results).toHaveLength(1);
       expect(results[0]!.title).toBe("Assigned Ready");
+    });
+
+    it("should filter by both status and user assignee", async () => {
+      const project = await createTestProject(db);
+      const user = await createTestUser(db);
+      const agent = await createTestAgent(db);
+
+      const userTask = await repo.create({
+        title: "User Ready",
+        projectId: project.uuid,
+      });
+      await repo.assign(userTask.uuid, { type: "user", uuid: user.uuid });
+      await repo.updateStatus(userTask.uuid, "ready");
+
+      const agentTask = await repo.create({
+        title: "Agent Ready",
+        projectId: project.uuid,
+      });
+      await repo.assign(agentTask.uuid, { type: "agent", uuid: agent.uuid });
+      await repo.updateStatus(agentTask.uuid, "ready");
+
+      const results = await repo.findByStatusAndAssignee("ready", {
+        type: "user",
+        uuid: user.uuid,
+      });
+      expect(results).toHaveLength(1);
+      expect(results[0]!.title).toBe("User Ready");
+      expect(results[0]!.assignee).toBe(`/users/${user.uuid}`);
     });
   });
 
@@ -196,8 +228,44 @@ describe("DrizzleTaskRepository", () => {
         projectId: project.uuid,
       });
 
-      const assigned = await repo.assign(task.uuid, agent.uuid);
-      expect(assigned!.agent).toBe(`/agents/${agent.uuid}`);
+      const assigned = await repo.assign(task.uuid, {
+        type: "agent",
+        uuid: agent.uuid,
+      });
+      expect(assigned!.assignee).toBe(`/agents/${agent.uuid}`);
+    });
+
+    it("should assign a user to a task", async () => {
+      const project = await createTestProject(db);
+      const user = await createTestUser(db);
+      const task = await repo.create({
+        title: "Assign Me",
+        projectId: project.uuid,
+      });
+
+      const assigned = await repo.assign(task.uuid, {
+        type: "user",
+        uuid: user.uuid,
+      });
+      expect(assigned!.assignee).toBe(`/users/${user.uuid}`);
+    });
+
+    it("should reassign a task from agent to user", async () => {
+      const project = await createTestProject(db);
+      const agent = await createTestAgent(db);
+      const user = await createTestUser(db);
+      const task = await repo.create({
+        title: "Reassign Me",
+        projectId: project.uuid,
+      });
+
+      await repo.assign(task.uuid, { type: "agent", uuid: agent.uuid });
+      const reassigned = await repo.assign(task.uuid, {
+        type: "user",
+        uuid: user.uuid,
+      });
+
+      expect(reassigned!.assignee).toBe(`/users/${user.uuid}`);
     });
   });
 

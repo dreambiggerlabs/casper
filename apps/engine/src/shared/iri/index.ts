@@ -1,2 +1,9 @@
-export { toIri, parseIri, iriSchema, nullableIriSchema } from "./iri.js";
-export type { ResourceType } from "./iri.js";
+export {
+  toIri,
+  parseIri,
+  iriSchema,
+  nullableIriSchema,
+  parsePolymorphicIri,
+  polymorphicIriSchema,
+} from "./iri.js";
+export type { ResourceType, PolymorphicIri } from "./iri.js";

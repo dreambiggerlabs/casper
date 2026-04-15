@@ -69,7 +69,7 @@ describe("EngineClient (integration)", () => {
       const agent = await createTestAgent(db);
       await createTestTask(db, {
         projectId: project.uuid,
-        agentId: agent.uuid,
+        assignee: { type: "agent", uuid: agent.uuid },
         status: "ready",
       });
 
@@ -109,7 +109,7 @@ describe("EngineClient (integration)", () => {
       const agent = await createTestAgent(db);
       await createTestTask(db, {
         projectId: project.uuid,
-        agentId: agent.uuid,
+        assignee: { type: "agent", uuid: agent.uuid },
         status: "ready",
       });
 
@@ -128,7 +128,7 @@ describe("EngineClient (integration)", () => {
       const agent = await createTestAgent(db);
       await createTestTask(db, {
         projectId: project.uuid,
-        agentId: agent.uuid,
+        assignee: { type: "agent", uuid: agent.uuid },
         status: "ready",
       });
 
@@ -147,7 +147,7 @@ describe("EngineClient (integration)", () => {
       const agent = await createTestAgent(db);
       await createTestTask(db, {
         projectId: project.uuid,
-        agentId: agent.uuid,
+        assignee: { type: "agent", uuid: agent.uuid },
         status: "ready",
       });
 

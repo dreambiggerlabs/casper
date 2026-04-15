@@ -41,6 +41,21 @@ async function createAgent(baseUrl: string, name = "Test Agent") {
   return (await res.json()) as Record<string, unknown>;
 }
 
+async function createUser(
+  baseUrl: string,
+  overrides: { name?: string; email?: string } = {},
+) {
+  const res = await fetch(`${baseUrl}/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: overrides.name ?? "Test User",
+      email: overrides.email ?? `u-${Date.now()}-${Math.random()}@example.com`,
+    }),
+  });
+  return (await res.json()) as Record<string, unknown>;
+}
+
 async function createTask(
   baseUrl: string,
   projectIri: string,
@@ -90,12 +105,12 @@ describe("Task lifecycle (E2E)", () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent: agent["@id"] }),
+        body: JSON.stringify({ assignee: agent["@id"] }),
       },
     );
     expect(assignRes.status).toBe(200);
     const assigned = (await assignRes.json()) as Record<string, unknown>;
-    expect(assigned["agent"]).toBe(agent["@id"]);
+    expect(assigned["assignee"]).toBe(agent["@id"]);
 
     // Update status to ready
     const statusRes = await fetch(
@@ -118,16 +133,66 @@ describe("Task lifecycle (E2E)", () => {
     const filtered = (await filterRes.json()) as Record<string, unknown>;
     expect(filtered["totalItems"]).toBe(1);
 
-    // Filter by agent
-    const agentFilterRes = await fetch(
-      `${server.baseUrl}/tasks?agent=${encodeURIComponent(agent["@id"] as string)}`,
+    // Filter by assignee IRI
+    const assigneeFilterRes = await fetch(
+      `${server.baseUrl}/tasks?assignee=${encodeURIComponent(agent["@id"] as string)}`,
     );
-    expect(agentFilterRes.status).toBe(200);
-    const agentFiltered = (await agentFilterRes.json()) as Record<
+    expect(assigneeFilterRes.status).toBe(200);
+    const assigneeFiltered = (await assigneeFilterRes.json()) as Record<
       string,
       unknown
     >;
-    expect(agentFiltered["totalItems"]).toBe(1);
+    expect(assigneeFiltered["totalItems"]).toBe(1);
+  });
+
+  it("should assign a user to a task", async () => {
+    const project = await createProject(server.baseUrl);
+    const user = await createUser(server.baseUrl, {
+      name: "Alice",
+      email: "alice-lifecycle@example.com",
+    });
+    const task = await createTask(
+      server.baseUrl,
+      project["@id"] as string,
+      "User Task",
+    );
+    const taskUuid = task["uuid"] as string;
+
+    const assignRes = await fetch(
+      `${server.baseUrl}/tasks/${taskUuid}/assign`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignee: user["@id"] }),
+      },
+    );
+    expect(assignRes.status).toBe(200);
+    const assigned = (await assignRes.json()) as Record<string, unknown>;
+    expect(assigned["assignee"]).toBe(user["@id"]);
+
+    // Filter by user assignee
+    const filterRes = await fetch(
+      `${server.baseUrl}/tasks?assignee=${encodeURIComponent(user["@id"] as string)}`,
+    );
+    const filtered = (await filterRes.json()) as Record<string, unknown>;
+    expect(filtered["totalItems"]).toBe(1);
+  });
+
+  it("should return 400 when assignee IRI is not agent or user", async () => {
+    const project = await createProject(server.baseUrl);
+    const task = await createTask(
+      server.baseUrl,
+      project["@id"] as string,
+    );
+    const response = await fetch(
+      `${server.baseUrl}/tasks/${task["uuid"]}/assign`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignee: project["@id"] }),
+      },
+    );
+    expect(response.status).toBe(400);
   });
 
   it("should list tasks by project", async () => {
