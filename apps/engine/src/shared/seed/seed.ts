@@ -16,6 +16,7 @@ import { logger } from "../logging/logger.js";
 import {
   createProject,
   createAgent,
+  createUser,
   createTask,
   createWorker,
 } from "./factories.js";
@@ -46,36 +47,43 @@ async function seed() {
     "Created agents",
   );
 
+  // Users
+  const alice = await createUser(db, {
+    name: "Alice",
+    email: "alice@example.com",
+  });
+  logger.info({ users: [alice.uuid] }, "Created users");
+
   // Web App tasks — various statuses
   await createTask(db, {
     title: "Set up authentication",
     projectId: webApp.uuid,
-    agentId: coder.uuid,
+    assignee: { type: "agent", uuid: coder.uuid },
     status: "completed",
   });
   await createTask(db, {
     title: "Build user dashboard",
     projectId: webApp.uuid,
-    agentId: coder.uuid,
+    assignee: { type: "agent", uuid: coder.uuid },
     status: "in_progress",
   });
   await createTask(db, {
     title: "Add email notifications",
     projectId: webApp.uuid,
-    agentId: coder.uuid,
+    assignee: { type: "agent", uuid: coder.uuid },
     status: "ready",
   });
   await createTask(db, {
     title: "Review security headers",
     projectId: webApp.uuid,
-    agentId: reviewer.uuid,
+    assignee: { type: "agent", uuid: reviewer.uuid },
     status: "review",
   });
   await createTask(db, {
     title: "Write API documentation",
     projectId: webApp.uuid,
-    status: "backlog",
-    // no agent — not yet assigned
+    assignee: { type: "user", uuid: alice.uuid },
+    status: "ready",
   });
   await createTask(db, {
     title: "Performance testing",
@@ -87,19 +95,19 @@ async function seed() {
   await createTask(db, {
     title: "Set up CI/CD pipeline",
     projectId: infrastructure.uuid,
-    agentId: devops.uuid,
+    assignee: { type: "agent", uuid: devops.uuid },
     status: "completed",
   });
   await createTask(db, {
     title: "Configure monitoring",
     projectId: infrastructure.uuid,
-    agentId: devops.uuid,
+    assignee: { type: "agent", uuid: devops.uuid },
     status: "ready",
   });
   await createTask(db, {
     title: "Set up staging environment",
     projectId: infrastructure.uuid,
-    agentId: devops.uuid,
+    assignee: { type: "agent", uuid: devops.uuid },
     status: "in_progress",
   });
   await createTask(db, {

@@ -69,7 +69,7 @@ export async function truncateAllTables(
   db: ReturnType<typeof drizzle>,
 ): Promise<void> {
   await db.execute(
-    sql`TRUNCATE worker_job, task, agent, worker, project RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE worker_job, task, agent, "user", worker, project RESTART IDENTITY CASCADE`,
   );
 }
 

@@ -10,6 +10,7 @@ import type {
 } from "../shared/pagination/index.js";
 import type { AgentReader } from "../agent/agent.types.js";
 import type { ProjectReader } from "../project/project.types.js";
+import type { UserReader } from "../user/user.types.js";
 
 import {
   createTaskSchema,
@@ -18,13 +19,14 @@ import {
   updateTaskStatusSchema,
   taskStatusSchema,
 } from "./task.schema.js";
-import type { Task, TaskRepository } from "./task.types.js";
+import type { AssigneeRef, Task, TaskRepository } from "./task.types.js";
 
 export class TaskService {
   constructor(
     private readonly taskRepository: TaskRepository,
     private readonly projectReader: ProjectReader,
     private readonly agentReader: AgentReader,
+    private readonly userReader: UserReader,
   ) {}
 
   async createTask(input: unknown): Promise<Task> {
@@ -61,7 +63,7 @@ export class TaskService {
   }
 
   async listTasks(
-    filters: { status?: string; agentId?: string } | undefined,
+    filters: { status?: string; assignee?: AssigneeRef } | undefined,
     pagination: PaginationParams,
   ): Promise<PaginatedResult<Task>> {
     const offset = (pagination.page - 1) * pagination.itemsPerPage;
@@ -80,7 +82,7 @@ export class TaskService {
       status: validatedStatus as
         | import("./task.schema.js").TaskStatus
         | undefined,
-      agentId: filters?.agentId,
+      assignee: filters?.assignee,
     };
 
     const [items, totalItems] = await Promise.all([
@@ -162,15 +164,22 @@ export class TaskService {
       throw new NotFoundError("Task", taskUuid);
     }
 
-    const agent = await this.agentReader.findByUuid(parsed.data.agentId);
-    if (!agent) {
-      throw new NotFoundError("Agent", parsed.data.agentId);
+    if (parsed.data.assigneeType === "agent") {
+      const agent = await this.agentReader.findByUuid(parsed.data.assigneeUuid);
+      if (!agent) {
+        throw new NotFoundError("Agent", parsed.data.assigneeUuid);
+      }
+    } else {
+      const user = await this.userReader.findByUuid(parsed.data.assigneeUuid);
+      if (!user) {
+        throw new NotFoundError("User", parsed.data.assigneeUuid);
+      }
     }
 
-    const updated = await this.taskRepository.assign(
-      taskUuid,
-      parsed.data.agentId,
-    );
+    const updated = await this.taskRepository.assign(taskUuid, {
+      type: parsed.data.assigneeType,
+      uuid: parsed.data.assigneeUuid,
+    });
     if (!updated) {
       throw new NotFoundError("Task", taskUuid);
     }

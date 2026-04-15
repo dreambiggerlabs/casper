@@ -12,8 +12,11 @@ import {
 import { z } from "zod";
 
 import { project } from "../project/project.schema.js";
-import { agent } from "../agent/agent.schema.js";
-import { iriSchema, nullableIriSchema } from "../shared/iri/index.js";
+import {
+  iriSchema,
+  nullableIriSchema,
+  polymorphicIriSchema,
+} from "../shared/iri/index.js";
 
 export const taskStatusValues = [
   "backlog",
@@ -29,6 +32,14 @@ export const taskStatusSchema = z.enum(taskStatusValues);
 
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
+export const assigneeTypeValues = ["agent", "user"] as const;
+
+export const assigneeTypeEnum = pgEnum("assignee_type", assigneeTypeValues);
+
+export const assigneeTypeSchema = z.enum(assigneeTypeValues);
+
+export type AssigneeType = z.infer<typeof assigneeTypeSchema>;
+
 export const task = pgTable(
   "task",
   {
@@ -39,7 +50,8 @@ export const task = pgTable(
     projectId: integer("project_id").notNull(),
     parentId: integer("parent_id"),
     status: taskStatusEnum().notNull().default("backlog"),
-    agentId: integer("agent_id"),
+    assigneeId: integer("assignee_id"),
+    assigneeType: assigneeTypeEnum("assignee_type"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -53,10 +65,6 @@ export const task = pgTable(
     parentForeignKey: foreignKey({
       columns: [table.parentId],
       foreignColumns: [table.id],
-    }),
-    agentForeignKey: foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agent.id],
     }),
   }),
 );
@@ -94,10 +102,13 @@ export const updateTaskSchema = z
 
 export const assignTaskSchema = z
   .object({
-    agent: iriSchema("agents"),
+    assignee: polymorphicIriSchema(["agents", "users"] as const),
   })
-  .transform(({ agent }) => ({
-    agentId: agent,
+  .transform(({ assignee }) => ({
+    assigneeType: (assignee.resource === "agents"
+      ? "agent"
+      : "user") as AssigneeType,
+    assigneeUuid: assignee.uuid,
   }));
 
 export const updateTaskStatusSchema = z.object({

@@ -45,7 +45,7 @@ describe("Worker polling cycle (E2E)", () => {
     const task = await createTestTask(db, {
       title: "E2E Cycle Task",
       projectId: project.uuid,
-      agentId: agent.uuid,
+      assignee: { type: "agent", uuid: agent.uuid },
       status: "ready",
     });
 

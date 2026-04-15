@@ -27,7 +27,7 @@ describe("JobProcessor", () => {
         uuid: "task-1",
         title: "Test Task",
         status: "in_progress",
-        agentId: "agent-1",
+        assignee: "/agents/agent-1",
       });
       vi.mocked(mockClient.updateJobStatus)
         .mockResolvedValueOnce({
@@ -54,7 +54,7 @@ describe("JobProcessor", () => {
         uuid: "task-1",
         title: "Test Task",
         status: "review",
-        agentId: "agent-1",
+        assignee: "/agents/agent-1",
       });
 
       const processor = new JobProcessor(mockClient);
@@ -133,7 +133,7 @@ describe("JobProcessor", () => {
         uuid: "task-1",
         title: "Test Task",
         status: "ready",
-        agentId: "agent-1",
+        assignee: "/agents/agent-1",
       });
 
       const processor = new JobProcessor(mockClient);

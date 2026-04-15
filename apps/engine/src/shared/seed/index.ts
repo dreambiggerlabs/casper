@@ -1,6 +1,7 @@
 export {
   createProject,
   createAgent,
+  createUser,
   createTask,
   createWorker,
   createJob,

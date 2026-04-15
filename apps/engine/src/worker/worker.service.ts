@@ -201,14 +201,16 @@ export class WorkerService {
     }
 
     return this.database.transaction(async (tx) => {
-      // Find and lock an available task (assigned but not yet claimed)
+      // Find and lock an available task (agent-assigned, ready, not yet claimed)
       const rows = await tx.execute<Record<string, unknown>>(
         sql`SELECT t.*, p.uuid AS project_uuid, a.uuid AS agent_uuid, pt.uuid AS parent_uuid
             FROM task t
             INNER JOIN project p ON t.project_id = p.id
-            LEFT JOIN agent a ON t.agent_id = a.id
+            LEFT JOIN agent a ON t.assignee_id = a.id AND t.assignee_type = 'agent'
             LEFT JOIN task pt ON t.parent_id = pt.id
-            WHERE t.status = 'ready' AND t.agent_id IS NOT NULL
+            WHERE t.status = 'ready'
+              AND t.assignee_type = 'agent'
+              AND t.assignee_id IS NOT NULL
             ORDER BY t.created_at ASC LIMIT 1
             FOR UPDATE OF t SKIP LOCKED`,
       );
@@ -263,7 +265,7 @@ export class WorkerService {
           ? toIri("tasks", taskRow.parent_uuid as string)
           : null,
         status: updatedTaskRow.status as Task["status"],
-        agent: taskRow.agent_uuid
+        assignee: taskRow.agent_uuid
           ? toIri("agents", taskRow.agent_uuid as string)
           : null,
         createdAt: updatedTaskRow.createdAt,

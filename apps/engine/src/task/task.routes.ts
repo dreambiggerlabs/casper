@@ -1,12 +1,14 @@
 import { Router } from "express";
 
-import { parseIri } from "../shared/iri/index.js";
+import { parsePolymorphicIri } from "../shared/iri/index.js";
 import {
   createHydraCollection,
   parsePaginationParams,
 } from "../shared/pagination/index.js";
+import { ValidationError } from "../shared/errors/index.js";
 
 import type { TaskService } from "./task.service.js";
+import type { AssigneeRef } from "./task.types.js";
 
 export function createTaskRoutes(service: TaskService): Router {
   const router = Router();
@@ -20,18 +22,39 @@ export function createTaskRoutes(service: TaskService): Router {
     const pagination = parsePaginationParams(
       request.query as Record<string, unknown>,
     );
-    const agentIri = request.query["agent"]?.toString();
+    const assigneeIri = request.query["assignee"]?.toString();
     const status = request.query["status"]?.toString();
+    let assignee: AssigneeRef | undefined;
+    if (assigneeIri) {
+      try {
+        const parsed = parsePolymorphicIri(assigneeIri, [
+          "agents",
+          "users",
+        ] as const);
+        assignee = {
+          type: parsed.resource === "agents" ? "agent" : "user",
+          uuid: parsed.uuid,
+        };
+      } catch {
+        throw new ValidationError("Invalid assignee IRI", [
+          {
+            field: "assignee",
+            message:
+              "Must be a valid IRI in the format /agents/{uuid} | /users/{uuid}",
+          },
+        ]);
+      }
+    }
     const result = await service.listTasks(
       {
         status,
-        agentId: agentIri ? parseIri(agentIri, "agents") : undefined,
+        assignee,
       },
       pagination,
     );
     const extraParams: Record<string, string> = {};
     if (status) extraParams["status"] = status;
-    if (agentIri) extraParams["agent"] = agentIri;
+    if (assigneeIri) extraParams["assignee"] = assigneeIri;
     const collection = createHydraCollection({
       ...result,
       ...pagination,

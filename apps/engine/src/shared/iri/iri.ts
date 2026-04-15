@@ -4,6 +4,7 @@ const RESOURCE_PATHS = {
   projects: "/projects",
   tasks: "/tasks",
   agents: "/agents",
+  users: "/users",
   workers: "/workers",
   jobs: "/jobs",
 } as const;
@@ -48,4 +49,49 @@ export function iriSchema(resource: ResourceType) {
 
 export function nullableIriSchema(resource: ResourceType) {
   return iriSchema(resource).nullable();
+}
+
+export interface PolymorphicIri<R extends ResourceType = ResourceType> {
+  resource: R;
+  uuid: string;
+}
+
+export function parsePolymorphicIri<R extends ResourceType>(
+  iri: string,
+  resources: readonly R[],
+): PolymorphicIri<R> {
+  for (const resource of resources) {
+    const prefix = `${RESOURCE_PATHS[resource]}/`;
+    if (!iri.startsWith(prefix)) continue;
+    const uuid = iri.slice(prefix.length);
+    if (!z.string().uuid().safeParse(uuid).success) continue;
+
+    return { resource, uuid };
+  }
+
+  const allowed = resources
+    .map((r) => `${RESOURCE_PATHS[r]}/{uuid}`)
+    .join(" | ");
+  throw new Error(`Invalid IRI: expected one of ${allowed}, got ${iri}`);
+}
+
+export function polymorphicIriSchema<R extends ResourceType>(
+  resources: readonly R[],
+) {
+  const allowed = resources
+    .map((r) => `${RESOURCE_PATHS[r]}/{uuid}`)
+    .join(" | ");
+
+  return z.string().transform((val, ctx) => {
+    try {
+      return parsePolymorphicIri(val, resources);
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Must be a valid IRI in the format ${allowed}`,
+      });
+
+      return z.NEVER;
+    }
+  });
 }

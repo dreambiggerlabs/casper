@@ -8,8 +8,11 @@ import type { Project } from "../../project/project.types.js";
 import { DrizzleAgentRepository } from "../../agent/agent.repository.js";
 import type { Agent } from "../../agent/agent.types.js";
 
+import { DrizzleUserRepository } from "../../user/user.repository.js";
+import type { User } from "../../user/user.types.js";
+
 import { DrizzleTaskRepository } from "../../task/task.repository.js";
-import type { Task } from "../../task/task.types.js";
+import type { AssigneeRef, Task } from "../../task/task.types.js";
 import type { TaskStatus } from "../../task/task.schema.js";
 
 import {
@@ -53,6 +56,19 @@ export async function createAgent(
   });
 }
 
+export async function createUser(
+  db: Database,
+  overrides: { name?: string; email?: string } = {},
+): Promise<User> {
+  const repo = new DrizzleUserRepository(db);
+  const id = nextId();
+
+  return repo.create({
+    name: overrides.name ?? `User ${id}`,
+    email: overrides.email ?? `user-${id}@example.com`,
+  });
+}
+
 export async function createTask(
   db: Database,
   overrides: {
@@ -60,7 +76,7 @@ export async function createTask(
     projectId: string;
     parentId?: string;
     status?: TaskStatus;
-    agentId?: string;
+    assignee?: AssigneeRef;
   },
 ): Promise<Task> {
   const repo = new DrizzleTaskRepository(db);
@@ -73,8 +89,8 @@ export async function createTask(
 
   let result = task;
 
-  if (overrides.agentId) {
-    const assigned = await repo.assign(task.uuid, overrides.agentId);
+  if (overrides.assignee) {
+    const assigned = await repo.assign(task.uuid, overrides.assignee);
     if (assigned) result = assigned;
   }
 

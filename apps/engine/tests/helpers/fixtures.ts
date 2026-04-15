@@ -7,6 +7,7 @@
 export {
   createProject as createTestProject,
   createAgent as createTestAgent,
+  createUser as createTestUser,
   createTask as createTestTask,
   createWorker as createTestWorker,
   createJob as createTestJob,
