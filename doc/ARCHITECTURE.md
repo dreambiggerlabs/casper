@@ -44,6 +44,8 @@ Casper Engine acts as the orchestrator between developer intent (tasks) and work
   - Piping outputs and execution logs back to the Engine.
 - **Tech Stack:** Node.js, `dockerode`, `simple-git`.
 
+The Worker separates **job orchestration** from **task execution** via the `TaskExecutor` interface (`apps/worker/src/task-executor.ts`). `JobProcessor` owns the job lifecycle (`ready` → `in_progress` → `completed`/`failed`) and delegates the actual task work to an injected `TaskExecutor`. The MVP ships with `MockTaskExecutor`, which logs and resolves immediately; real execution (ephemeral Docker container, agent runner, git workflow) plugs in later by implementing the same interface without touching orchestration.
+
 ### 2.3 Studio
 - **Role:** User interface for monitoring and management.
 - **Responsibilities:**
