@@ -17,6 +17,7 @@ function toProject(row: typeof project.$inferSelect): Project {
     uuid: row.uuid,
     title: row.title,
     description: row.description,
+    repositoryUrl: row.repositoryUrl,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

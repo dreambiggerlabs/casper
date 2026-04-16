@@ -15,8 +15,15 @@ export type JobStatus = "ready" | "in_progress" | "completed" | "failed";
 export interface Task {
   uuid: string;
   title: string;
+  description: string | null;
+  project: string;
   status: TaskStatus;
   assignee: string | null;
+}
+
+export interface Project {
+  uuid: string;
+  repositoryUrl: string | null;
 }
 
 export interface Worker {

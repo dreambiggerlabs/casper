@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 import { EngineClient } from "../../src/engine-client.js";
 import { JobProcessor } from "../../src/job-processor.js";
+import type { ProjectSourceManager } from "../../src/project-source-manager.js";
 import type { TaskExecutor } from "../../src/task-executor.js";
 
 function createMockEngineClient(): EngineClient {
@@ -12,6 +13,7 @@ function createMockEngineClient(): EngineClient {
     claimTask: vi.fn(),
     getJob: vi.fn(),
     updateJobStatus: vi.fn(),
+    getProject: vi.fn(),
     getTask: vi.fn(),
     updateTaskStatus: vi.fn(),
   } as unknown as EngineClient;
@@ -19,6 +21,12 @@ function createMockEngineClient(): EngineClient {
 
 function createMockTaskExecutor(): TaskExecutor {
   return { execute: vi.fn().mockResolvedValue(undefined) };
+}
+
+function createMockProjectSourceManager(): ProjectSourceManager {
+  return {
+    ensureSource: vi.fn().mockResolvedValue("/home/test/.casper/projects/project-1/source"),
+  } as unknown as ProjectSourceManager;
 }
 
 const WORKER_ID = "550e8400-e29b-41d4-a716-446655440004";
@@ -32,6 +40,8 @@ describe("JobProcessor", () => {
       const fetchedTask = {
         uuid: "task-1",
         title: "Test Task",
+        description: null,
+        project: "/projects/project-1",
         status: "in_progress" as const,
         assignee: "/agents/agent-1",
       };
@@ -57,14 +67,21 @@ describe("JobProcessor", () => {
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         });
+      vi.mocked(mockClient.getProject).mockResolvedValue({
+        uuid: "project-1",
+        repositoryUrl: null,
+      });
       vi.mocked(mockClient.updateTaskStatus).mockResolvedValueOnce({
         uuid: "task-1",
         title: "Test Task",
+        description: null,
+        project: "/projects/project-1",
         status: "review",
         assignee: "/agents/agent-1",
       });
 
-      const processor = new JobProcessor(mockClient, mockExecutor);
+      const mockSourceManager = createMockProjectSourceManager();
+      const processor = new JobProcessor(mockClient, mockExecutor, mockSourceManager);
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -81,7 +98,8 @@ describe("JobProcessor", () => {
       expect(mockClient.updateJobStatus).toHaveBeenNthCalledWith(2, "job-1", "completed");
       expect(mockClient.getTask).toHaveBeenCalledWith("task-1");
       expect(mockExecutor.execute).toHaveBeenCalledTimes(1);
-      expect(mockExecutor.execute).toHaveBeenCalledWith(fetchedTask, expect.anything());
+      expect(mockSourceManager.ensureSource).toHaveBeenCalledWith({ uuid: "project-1", repositoryUrl: null });
+      expect(mockExecutor.execute).toHaveBeenCalledWith(fetchedTask, "/home/test/.casper/projects/project-1/source", expect.anything());
       expect(mockClient.updateTaskStatus).toHaveBeenCalledTimes(1);
       expect(mockClient.updateTaskStatus).toHaveBeenCalledWith("task-1", "review");
     });
@@ -99,7 +117,7 @@ describe("JobProcessor", () => {
         updatedAt: "2026-01-01T00:00:00Z",
       });
 
-      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor(), createMockProjectSourceManager());
 
       await expect(processor.process({
         uuid: "job-1",
@@ -121,13 +139,20 @@ describe("JobProcessor", () => {
       vi.mocked(mockClient.getTask).mockResolvedValue({
         uuid: "task-1",
         title: "Test Task",
+        description: null,
+        project: "/projects/project-1",
         status: "in_progress",
         assignee: "/agents/agent-1",
+      });
+      vi.mocked(mockClient.getProject).mockResolvedValue({
+        uuid: "project-1",
+        repositoryUrl: null,
       });
       vi.mocked(mockClient.updateJobStatus).mockResolvedValue({} as never);
       vi.mocked(mockClient.updateTaskStatus).mockResolvedValue({} as never);
 
-      const processor = new JobProcessor(mockClient, mockExecutor);
+      const mockSourceManager = createMockProjectSourceManager();
+      const processor = new JobProcessor(mockClient, mockExecutor, mockSourceManager);
 
       await expect(processor.process({
         uuid: "job-1",
@@ -172,11 +197,13 @@ describe("JobProcessor", () => {
       vi.mocked(mockClient.updateTaskStatus).mockResolvedValueOnce({
         uuid: "task-1",
         title: "Test Task",
+        description: null,
+        project: "/projects/project-1",
         status: "ready",
         assignee: "/agents/agent-1",
       });
 
-      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor(), createMockProjectSourceManager());
 
       await expect(processor.process({
         uuid: "job-1",
@@ -217,7 +244,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor(), createMockProjectSourceManager());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -258,7 +285,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor(), createMockProjectSourceManager());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,
@@ -297,7 +324,7 @@ describe("JobProcessor", () => {
           updatedAt: "2026-01-01T00:00:00Z",
         });
 
-      const processor = new JobProcessor(mockClient, createMockTaskExecutor());
+      const processor = new JobProcessor(mockClient, createMockTaskExecutor(), createMockProjectSourceManager());
       await processor.process({
         uuid: "job-1",
         worker: `/workers/${WORKER_ID}`,

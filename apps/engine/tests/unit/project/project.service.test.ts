@@ -22,6 +22,8 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     "@id": `/projects/${uuid}`,
     uuid,
     title: "Test Project",
+    description: null,
+    repositoryUrl: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides,
@@ -54,6 +56,46 @@ describe("ProjectService", () => {
       await expect(service.createProject({ title: "" })).rejects.toThrow(
         ValidationError,
       );
+    });
+
+    it("should create a project with repositoryUrl", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({
+        title: "Remote Project",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+      vi.mocked(repo.create).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      const result = await service.createProject({
+        title: "Remote Project",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(result).toEqual(expected);
+      expect(repo.create).toHaveBeenCalledWith({
+        title: "Remote Project",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+    });
+
+    it("should create a project without repositoryUrl (local git)", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({ title: "Local Project", repositoryUrl: null });
+      vi.mocked(repo.create).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      const result = await service.createProject({ title: "Local Project" });
+
+      expect(result).toEqual(expected);
+    });
+
+    it("should throw ValidationError when repositoryUrl is not a valid URL", async () => {
+      const service = new ProjectService(createMockRepository());
+
+      await expect(
+        service.createProject({ title: "Bad URL", repositoryUrl: "not-a-url" }),
+      ).rejects.toThrow(ValidationError);
     });
   });
 
@@ -153,6 +195,22 @@ describe("ProjectService", () => {
       await expect(service.updateProject("some-uuid", {})).rejects.toThrow(
         ValidationError,
       );
+    });
+
+    it("should update a project to add repositoryUrl", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({
+        title: "Upgraded",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+      vi.mocked(repo.update).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      const result = await service.updateProject(expected.uuid, {
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(result).toEqual(expected);
     });
   });
 });

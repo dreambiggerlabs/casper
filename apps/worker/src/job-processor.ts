@@ -2,6 +2,7 @@ import type { Logger } from "pino";
 
 import { logger } from "./logging/logger.js";
 import type { EngineClient } from "./engine-client.js";
+import type { ProjectSourceManager } from "./project-source-manager.js";
 import type { TaskExecutor } from "./task-executor.js";
 import type { WorkerJob } from "./types.js";
 
@@ -9,6 +10,7 @@ export class JobProcessor {
   constructor(
     private readonly engineClient: EngineClient,
     private readonly taskExecutor: TaskExecutor,
+    private readonly projectSourceManager: ProjectSourceManager,
   ) {}
 
   async process(job: WorkerJob): Promise<void> {
@@ -75,7 +77,12 @@ export class JobProcessor {
     const taskUuid = this.parseIri(job.task);
     const task = await this.engineClient.getTask(taskUuid);
 
-    await this.taskExecutor.execute(task, jobLogger);
+    const projectUuid = this.parseIri(task.project);
+    const project = await this.engineClient.getProject(projectUuid);
+    const sourcePath = await this.projectSourceManager.ensureSource(project);
+    jobLogger.debug({ projectId: project.uuid, sourcePath }, "Source ready");
+
+    await this.taskExecutor.execute(task, sourcePath, jobLogger);
 
     await this.engineClient.updateTaskStatus(task.uuid, "review");
     jobLogger.debug({ taskId: task.uuid }, "Task moved to review");

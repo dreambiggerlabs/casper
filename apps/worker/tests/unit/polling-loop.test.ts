@@ -12,6 +12,7 @@ function createMockEngineClient(): EngineClient {
     claimTask: vi.fn(),
     getJob: vi.fn(),
     updateJobStatus: vi.fn(),
+    getProject: vi.fn(),
     getTask: vi.fn(),
     updateTaskStatus: vi.fn(),
   } as unknown as EngineClient;
@@ -130,6 +131,8 @@ describe("PollingLoop", () => {
       task: {
         uuid: "task-claimed",
         title: "Claimed task",
+        description: null,
+        project: "/projects/project-1",
         status: "in_progress" as const,
         assignee: "/agents/agent-1",
       },

@@ -164,6 +164,31 @@ describe("EngineClient (integration)", () => {
     });
   });
 
+  describe("getProject", () => {
+    it("should get a project by uuid", async () => {
+      const project = await createTestProject(db);
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.uuid).toBe(project.uuid);
+    });
+
+    it("should return repositoryUrl when set", async () => {
+      const project = await createTestProject(db, {
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.repositoryUrl).toBe("https://github.com/org/repo.git");
+    });
+
+    it("should return null repositoryUrl when not set", async () => {
+      const project = await createTestProject(db);
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.repositoryUrl).toBeNull();
+    });
+  });
+
   describe("getTask", () => {
     it("should get a task by uuid", async () => {
       const project = await createTestProject(db);

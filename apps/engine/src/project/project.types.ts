@@ -10,6 +10,7 @@ export interface Project {
   uuid: string;
   title: string;
   description: string | null;
+  repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date | null;
 }

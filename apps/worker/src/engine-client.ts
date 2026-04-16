@@ -1,4 +1,4 @@
-import type { Task, Worker, WorkerJob } from "./types.js";
+import type { Project, Task, Worker, WorkerJob } from "./types.js";
 
 export class EngineClient {
   constructor(private readonly engineUrl: string) {}
@@ -83,6 +83,17 @@ export class EngineClient {
     }
 
     return response.json() as Promise<WorkerJob>;
+  }
+
+  async getProject(projectUuid: string): Promise<Project> {
+    const response = await fetch(`${this.engineUrl}/projects/${projectUuid}`);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to get project: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json() as Promise<Project>;
   }
 
   async getTask(taskUuid: string): Promise<Task> {

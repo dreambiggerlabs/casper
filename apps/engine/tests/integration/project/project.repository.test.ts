@@ -40,6 +40,21 @@ describe("DrizzleProjectRepository", () => {
 
       expect(project.description).toBe("A description");
     });
+
+    it("should create a project with repositoryUrl", async () => {
+      const project = await repo.create({
+        title: "Remote",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(project.repositoryUrl).toBe("https://github.com/org/repo.git");
+    });
+
+    it("should create a project without repositoryUrl", async () => {
+      const project = await repo.create({ title: "Local" });
+
+      expect(project.repositoryUrl).toBeNull();
+    });
   });
 
   describe("findByUuid", () => {
@@ -119,6 +134,18 @@ describe("DrizzleProjectRepository", () => {
         { title: "Nope" },
       );
       expect(result).toBeUndefined();
+    });
+
+    it("should update repositoryUrl on an existing project", async () => {
+      const created = await repo.create({ title: "Local" });
+      expect(created.repositoryUrl).toBeNull();
+
+      const updated = await repo.update(created.uuid, {
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(updated).toBeDefined();
+      expect(updated!.repositoryUrl).toBe("https://github.com/org/repo.git");
     });
   });
 });
