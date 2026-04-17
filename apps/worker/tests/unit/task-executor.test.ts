@@ -25,9 +25,12 @@ describe("MockTaskExecutor", () => {
         {
           uuid: "task-1",
           title: "Test Task",
+          description: null,
+          project: "/projects/project-1",
           status: "in_progress",
           assignee: "/agents/agent-1",
         },
+        "/home/test/.casper/projects/project-1/source",
         logger,
       ),
     ).resolves.toBeUndefined();
@@ -37,6 +40,7 @@ describe("MockTaskExecutor", () => {
         taskId: "task-1",
         taskTitle: "Test Task",
         assignee: "/agents/agent-1",
+        sourcePath: "/home/test/.casper/projects/project-1/source",
       },
       "Executing task (mock)",
     );

@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 
+import { tmpdir } from "os";
+import { join } from "path";
+
 import { EngineClient } from "../../src/engine-client.js";
 import { JobProcessor } from "../../src/job-processor.js";
 import { PollingLoop } from "../../src/polling-loop.js";
+import { ProjectSourceManager } from "../../src/project-source-manager.js";
 import { MockTaskExecutor } from "../../src/task-executor.js";
+import { logger } from "../../src/logging/logger.js";
 
 import { startTestServer } from "../../../engine/tests/helpers/create-app.js";
 import type { TestServer } from "../../../engine/tests/helpers/create-app.js";
@@ -53,7 +58,13 @@ describe("Worker polling cycle (E2E)", () => {
     // Create worker components
     const engineClient = new EngineClient(server.baseUrl);
     const worker = await engineClient.registerWorker("E2E Cycle Worker");
-    const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor());
+    const projectsBasePath = join(tmpdir(), `casper-test-${Date.now()}`);
+    const projectSourceManager = new ProjectSourceManager(
+      projectsBasePath,
+      logger,
+      engineClient,
+    );
+    const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor(), projectSourceManager);
     const pollingLoop = new PollingLoop(
       engineClient,
       jobProcessor,
@@ -85,7 +96,13 @@ describe("Worker polling cycle (E2E)", () => {
   it("should idle when no tasks are available", async () => {
     const engineClient = new EngineClient(server.baseUrl);
     const worker = await engineClient.registerWorker("Idle Worker");
-    const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor());
+    const projectsBasePath = join(tmpdir(), `casper-test-${Date.now()}`);
+    const projectSourceManager = new ProjectSourceManager(
+      projectsBasePath,
+      logger,
+      engineClient,
+    );
+    const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor(), projectSourceManager);
     const pollingLoop = new PollingLoop(
       engineClient,
       jobProcessor,

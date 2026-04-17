@@ -10,7 +10,11 @@ import type {
 } from "../shared/pagination/index.js";
 
 import { createProjectSchema, updateProjectSchema } from "./project.schema.js";
-import type { Project, ProjectRepository } from "./project.types.js";
+import type {
+  Project,
+  ProjectCredential,
+  ProjectRepository,
+} from "./project.types.js";
 
 export class ProjectService {
   constructor(private readonly repository: ProjectRepository) {}
@@ -62,5 +66,18 @@ export class ProjectService {
     }
 
     return updated;
+  }
+
+  async getCredential(uuid: string): Promise<ProjectCredential> {
+    const project = await this.repository.findByUuid(uuid);
+    if (!project) {
+      throw new NotFoundError("Project", uuid);
+    }
+    const credential = await this.repository.findCredential(uuid);
+    if (!credential) {
+      throw new NotFoundError("ProjectCredential", uuid);
+    }
+
+    return credential;
   }
 }

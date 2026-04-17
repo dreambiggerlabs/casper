@@ -164,6 +164,31 @@ describe("EngineClient (integration)", () => {
     });
   });
 
+  describe("getProject", () => {
+    it("should get a project by uuid", async () => {
+      const project = await createTestProject(db);
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.uuid).toBe(project.uuid);
+    });
+
+    it("should return repositoryUrl when set", async () => {
+      const project = await createTestProject(db, {
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.repositoryUrl).toBe("https://github.com/org/repo.git");
+    });
+
+    it("should return null repositoryUrl when not set", async () => {
+      const project = await createTestProject(db);
+
+      const fetched = await engineClient.getProject(project.uuid);
+      expect(fetched.repositoryUrl).toBeNull();
+    });
+  });
+
   describe("getTask", () => {
     it("should get a task by uuid", async () => {
       const project = await createTestProject(db);
@@ -175,6 +200,77 @@ describe("EngineClient (integration)", () => {
       const fetched = await engineClient.getTask(task.uuid);
       expect(fetched.uuid).toBe(task.uuid);
       expect(fetched.title).toBe("Fetch Me");
+    });
+  });
+
+  describe("getProjectCredential", () => {
+    async function createProjectWithCredential(
+      payload: Record<string, unknown>,
+    ): Promise<string> {
+      const res = await fetch(`${server.baseUrl}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await res.json()) as { uuid: string };
+
+      return body.uuid;
+    }
+
+    it("returns the decrypted credential when worker token is set", async () => {
+      const worker = await engineClient.registerWorker("Cred Worker");
+      engineClient.setWorkerToken(worker.token);
+      const projectUuid = await createProjectWithCredential({
+        title: "Cred Project",
+        credential: {
+          type: "https_token",
+          username: "octocat",
+          token: "ghp_decryptme",
+        },
+      });
+
+      const credential = await engineClient.getProjectCredential(projectUuid);
+      expect(credential).toEqual({
+        type: "https_token",
+        username: "octocat",
+        token: "ghp_decryptme",
+      });
+    });
+
+    it("returns null when project has no credential", async () => {
+      const worker = await engineClient.registerWorker("No Cred Worker");
+      engineClient.setWorkerToken(worker.token);
+      const projectUuid = await createProjectWithCredential({
+        title: "No Cred",
+      });
+
+      const credential = await engineClient.getProjectCredential(projectUuid);
+      expect(credential).toBeNull();
+    });
+
+    it("throws when worker token is not set", async () => {
+      const freshClient = new EngineClient(server.baseUrl);
+      const projectUuid = await createProjectWithCredential({
+        title: "Token Required",
+        credential: { type: "https_token", token: "ghp_x" },
+      });
+
+      await expect(
+        freshClient.getProjectCredential(projectUuid),
+      ).rejects.toThrow(/Worker token not set/);
+    });
+
+    it("throws on 401 when token is invalid", async () => {
+      const freshClient = new EngineClient(server.baseUrl);
+      freshClient.setWorkerToken("not-a-real-token");
+      const projectUuid = await createProjectWithCredential({
+        title: "Bad Token",
+        credential: { type: "https_token", token: "ghp_x" },
+      });
+
+      await expect(
+        freshClient.getProjectCredential(projectUuid),
+      ).rejects.toThrow(/401/);
     });
   });
 

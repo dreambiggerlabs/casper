@@ -123,4 +123,56 @@ describe("Project lifecycle (E2E)", () => {
     expect(body["error"]).toBe("Validation failed");
     expect(body["violations"]).toBeDefined();
   });
+
+  it("should create a project with repositoryUrl", async () => {
+    const response = await fetch(`${server.baseUrl}/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Remote Project",
+        repositoryUrl: "https://github.com/org/repo.git",
+      }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body["repositoryUrl"]).toBe("https://github.com/org/repo.git");
+  });
+
+  it("should create a project without repositoryUrl (local git)", async () => {
+    const response = await fetch(`${server.baseUrl}/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Local Project" }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body["repositoryUrl"]).toBeNull();
+  });
+
+  it("should upgrade a project by adding repositoryUrl via PATCH", async () => {
+    const createRes = await fetch(`${server.baseUrl}/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Local First" }),
+    });
+    const created = (await createRes.json()) as Record<string, unknown>;
+    expect(created["repositoryUrl"]).toBeNull();
+
+    const response = await fetch(
+      `${server.baseUrl}/projects/${created["uuid"]}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repositoryUrl: "https://github.com/org/repo.git",
+        }),
+      },
+    );
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body["repositoryUrl"]).toBe("https://github.com/org/repo.git");
+  });
 });

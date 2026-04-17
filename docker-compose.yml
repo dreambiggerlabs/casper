@@ -26,6 +26,7 @@ services:
       - "${ENGINE_PORT}:3000"
     environment:
       DATABASE_URL: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:5432/${DATABASE_NAME}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
     volumes:
       - ./apps/engine:/app
     command: sh -c "npm install && npm run db:migrate && npm run dev"
@@ -57,7 +58,7 @@ services:
     build:
       context: .docker
       dockerfile: worker/Dockerfile
-    working_dir: /app
+    working_dir: /home/node/.casper
     user: "${UID:-1000}:${GID:-1000}"
     environment:
       ENGINE_URL: "http://engine:3000"
@@ -65,7 +66,7 @@ services:
     volumes:
       - ./apps/worker:/app
       - casper:/home/node/.casper
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "cd /app && npm install && npm run dev"
     depends_on:
       engine:
         condition: service_healthy
@@ -78,6 +79,7 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     environment:
       DATABASE_URL: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:5432/${DATABASE_NAME}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
     volumes:
       - ./apps/engine:/app
     profiles:

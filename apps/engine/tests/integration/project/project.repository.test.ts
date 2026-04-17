@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { sql } from "drizzle-orm";
 
 import { DrizzleProjectRepository } from "../../../src/project/project.repository.js";
 import {
@@ -39,6 +40,21 @@ describe("DrizzleProjectRepository", () => {
       });
 
       expect(project.description).toBe("A description");
+    });
+
+    it("should create a project with repositoryUrl", async () => {
+      const project = await repo.create({
+        title: "Remote",
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(project.repositoryUrl).toBe("https://github.com/org/repo.git");
+    });
+
+    it("should create a project without repositoryUrl", async () => {
+      const project = await repo.create({ title: "Local" });
+
+      expect(project.repositoryUrl).toBeNull();
     });
   });
 
@@ -119,6 +135,88 @@ describe("DrizzleProjectRepository", () => {
         { title: "Nope" },
       );
       expect(result).toBeUndefined();
+    });
+
+    it("should update repositoryUrl on an existing project", async () => {
+      const created = await repo.create({ title: "Local" });
+      expect(created.repositoryUrl).toBeNull();
+
+      const updated = await repo.update(created.uuid, {
+        repositoryUrl: "https://github.com/org/repo.git",
+      });
+
+      expect(updated).toBeDefined();
+      expect(updated!.repositoryUrl).toBe("https://github.com/org/repo.git");
+    });
+  });
+
+  describe("credentials", () => {
+    it("stores https_token credential encrypted at rest and returns credentialType", async () => {
+      const created = await repo.create({
+        title: "Token project",
+        credential: { type: "https_token", token: "ghp_supersecret_xyz" },
+      });
+
+      expect(created.credentialType).toBe("https_token");
+
+      const rawRows = await db.execute(
+        sql`SELECT credential_type, credential FROM project WHERE uuid = ${created.uuid}::uuid`,
+      );
+      const raw = rawRows[0] as {
+        credential_type: string | null;
+        credential: string | null;
+      };
+      expect(raw.credential_type).toBe("https_token");
+      expect(raw.credential).toBeTruthy();
+      expect(raw.credential).not.toContain("ghp_supersecret_xyz");
+    });
+
+    it("decrypts credential via findCredential", async () => {
+      const created = await repo.create({
+        title: "Decrypt project",
+        credential: {
+          type: "ssh_key",
+          privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----\ndata\n",
+          passphrase: "p4ss",
+        },
+      });
+
+      const credential = await repo.findCredential(created.uuid);
+      expect(credential).toEqual({
+        type: "ssh_key",
+        privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----\ndata\n",
+        passphrase: "p4ss",
+      });
+    });
+
+    it("returns null when no credential is set", async () => {
+      const created = await repo.create({ title: "No cred" });
+      const credential = await repo.findCredential(created.uuid);
+      expect(credential).toBeNull();
+    });
+
+    it("clears credential when update sets credential to null", async () => {
+      const created = await repo.create({
+        title: "To clear",
+        credential: { type: "https_token", token: "to_be_cleared" },
+      });
+      expect(created.credentialType).toBe("https_token");
+
+      const updated = await repo.update(created.uuid, { credential: null });
+      expect(updated!.credentialType).toBeNull();
+      expect(await repo.findCredential(created.uuid)).toBeNull();
+    });
+
+    it("leaves credential untouched when update does not include credential", async () => {
+      const created = await repo.create({
+        title: "Keep cred",
+        credential: { type: "https_token", token: "stays" },
+      });
+
+      await repo.update(created.uuid, { title: "Renamed" });
+
+      const credential = await repo.findCredential(created.uuid);
+      expect(credential).toEqual({ type: "https_token", token: "stays" });
     });
   });
 });

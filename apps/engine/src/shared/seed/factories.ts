@@ -35,13 +35,18 @@ export function resetCounter(): void {
 
 export async function createProject(
   db: Database,
-  overrides: { title?: string; description?: string } = {},
+  overrides: {
+    title?: string;
+    description?: string;
+    repositoryUrl?: string;
+  } = {},
 ): Promise<Project> {
   const repo = new DrizzleProjectRepository(db);
 
   return repo.create({
     title: overrides.title ?? `Project ${nextId()}`,
     description: overrides.description,
+    repositoryUrl: overrides.repositoryUrl,
   });
 }
 

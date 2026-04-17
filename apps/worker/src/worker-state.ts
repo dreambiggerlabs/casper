@@ -11,6 +11,10 @@ function getWorkerStatePath(): string {
   return join(homedir(), CASPER_DIR, WORKER_STATE_FILE);
 }
 
+export function getProjectsBasePath(): string {
+  return join(homedir(), CASPER_DIR, "projects");
+}
+
 async function ensureCasperDir(): Promise<void> {
   const casperDir = join(homedir(), CASPER_DIR);
   try {

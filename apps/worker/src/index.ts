@@ -4,8 +4,13 @@ import { hostname } from "os";
 import { EngineClient } from "./engine-client.js";
 import { JobProcessor } from "./job-processor.js";
 import { PollingLoop } from "./polling-loop.js";
+import { ProjectSourceManager } from "./project-source-manager.js";
 import { MockTaskExecutor } from "./task-executor.js";
-import { loadWorkerState, saveWorkerState } from "./worker-state.js";
+import {
+  getProjectsBasePath,
+  loadWorkerState,
+  saveWorkerState,
+} from "./worker-state.js";
 import { logger } from "./logging/logger.js";
 
 const ENGINE_URL = process.env["ENGINE_URL"];
@@ -39,8 +44,19 @@ async function main(): Promise<void> {
     await engineClient.heartbeat(workerState.workerId);
   }
 
+  engineClient.setWorkerToken(workerState.token);
+
   const taskExecutor = new MockTaskExecutor();
-  const jobProcessor = new JobProcessor(engineClient, taskExecutor);
+  const projectSourceManager = new ProjectSourceManager(
+    getProjectsBasePath(),
+    logger,
+    engineClient,
+  );
+  const jobProcessor = new JobProcessor(
+    engineClient,
+    taskExecutor,
+    projectSourceManager,
+  );
   const pollingLoop = new PollingLoop(
     engineClient,
     jobProcessor,
