@@ -11,6 +11,7 @@ function createMockRepository(): ProjectRepository {
     findAll: vi.fn(),
     count: vi.fn(),
     findPaginated: vi.fn(),
+    findCredential: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
   };
@@ -24,6 +25,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     title: "Test Project",
     description: null,
     repositoryUrl: null,
+    credentialType: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     ...overrides,
@@ -95,6 +97,59 @@ describe("ProjectService", () => {
 
       await expect(
         service.createProject({ title: "Bad URL", repositoryUrl: "not-a-url" }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it("should accept an https_token credential", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({
+        title: "Auth project",
+        repositoryUrl: "https://github.com/org/repo.git",
+        credentialType: "https_token",
+      });
+      vi.mocked(repo.create).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      const result = await service.createProject({
+        title: "Auth project",
+        repositoryUrl: "https://github.com/org/repo.git",
+        credential: { type: "https_token", token: "ghp_x" },
+      });
+
+      expect(result.credentialType).toBe("https_token");
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          credential: { type: "https_token", token: "ghp_x" },
+        }),
+      );
+    });
+
+    it("should accept an ssh_key credential", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({
+        title: "SSH project",
+        repositoryUrl: "git@github.com:org/repo.git",
+        credentialType: "ssh_key",
+      });
+      vi.mocked(repo.create).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      const result = await service.createProject({
+        title: "SSH project",
+        credential: { type: "ssh_key", privateKey: "-----BEGIN..." },
+      });
+
+      expect(result.credentialType).toBe("ssh_key");
+    });
+
+    it("should reject an https_token credential missing token", async () => {
+      const service = new ProjectService(createMockRepository());
+
+      await expect(
+        service.createProject({
+          title: "Bad cred",
+          credential: { type: "https_token" } as unknown,
+        }),
       ).rejects.toThrow(ValidationError);
     });
   });
@@ -211,6 +266,61 @@ describe("ProjectService", () => {
       });
 
       expect(result).toEqual(expected);
+    });
+
+    it("should clear credentials when credential is null", async () => {
+      const repo = createMockRepository();
+      const expected = makeProject({ credentialType: null });
+      vi.mocked(repo.update).mockResolvedValue(expected);
+
+      const service = new ProjectService(repo);
+      await service.updateProject(expected.uuid, { credential: null });
+
+      expect(repo.update).toHaveBeenCalledWith(
+        expected.uuid,
+        expect.objectContaining({ credential: null }),
+      );
+    });
+  });
+
+  describe("getCredential", () => {
+    it("should return the decrypted credential", async () => {
+      const repo = createMockRepository();
+      const project = makeProject({ credentialType: "https_token" });
+      vi.mocked(repo.findByUuid).mockResolvedValue(project);
+      vi.mocked(repo.findCredential).mockResolvedValue({
+        type: "https_token",
+        token: "ghp_secret",
+      });
+
+      const service = new ProjectService(repo);
+      const result = await service.getCredential(project.uuid);
+
+      expect(result).toEqual({ type: "https_token", token: "ghp_secret" });
+    });
+
+    it("should throw NotFoundError when project does not exist", async () => {
+      const repo = createMockRepository();
+      vi.mocked(repo.findByUuid).mockResolvedValue(undefined);
+
+      const service = new ProjectService(repo);
+
+      await expect(service.getCredential("missing")).rejects.toThrow(
+        NotFoundError,
+      );
+    });
+
+    it("should throw NotFoundError when no credential is set", async () => {
+      const repo = createMockRepository();
+      const project = makeProject({ credentialType: null });
+      vi.mocked(repo.findByUuid).mockResolvedValue(project);
+      vi.mocked(repo.findCredential).mockResolvedValue(null);
+
+      const service = new ProjectService(repo);
+
+      await expect(service.getCredential(project.uuid)).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 });

@@ -59,7 +59,11 @@ describe("Worker polling cycle (E2E)", () => {
     const engineClient = new EngineClient(server.baseUrl);
     const worker = await engineClient.registerWorker("E2E Cycle Worker");
     const projectsBasePath = join(tmpdir(), `casper-test-${Date.now()}`);
-    const projectSourceManager = new ProjectSourceManager(projectsBasePath, logger);
+    const projectSourceManager = new ProjectSourceManager(
+      projectsBasePath,
+      logger,
+      engineClient,
+    );
     const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor(), projectSourceManager);
     const pollingLoop = new PollingLoop(
       engineClient,
@@ -93,7 +97,11 @@ describe("Worker polling cycle (E2E)", () => {
     const engineClient = new EngineClient(server.baseUrl);
     const worker = await engineClient.registerWorker("Idle Worker");
     const projectsBasePath = join(tmpdir(), `casper-test-${Date.now()}`);
-    const projectSourceManager = new ProjectSourceManager(projectsBasePath, logger);
+    const projectSourceManager = new ProjectSourceManager(
+      projectsBasePath,
+      logger,
+      engineClient,
+    );
     const jobProcessor = new JobProcessor(engineClient, new MockTaskExecutor(), projectSourceManager);
     const pollingLoop = new PollingLoop(
       engineClient,

@@ -12,12 +12,60 @@ export const openApiSpec = {
       post: {
         tags: ["Projects"],
         summary: "Create a project",
+        description: [
+          "Create a new project. Optionally include a `repositoryUrl` and `credential` so workers can clone private repositories.",
+          "",
+          "**Sending SSH keys via curl:** SSH private keys are multi-line and must be JSON-escaped (newlines → `\\n`).",
+          "Use `jq` to handle the escaping automatically:",
+          "```bash",
+          'jq -n --arg key "$(cat ~/.ssh/id_ed25519)" \'{',
+          '  title: "My Project",',
+          '  repositoryUrl: "git@github.com:org/private-repo.git",',
+          '  credential: { type: "ssh_key", privateKey: $key }',
+          "}' | curl -X POST http://localhost:3000/projects \\",
+          '  -H "Content-Type: application/json" -d @-',
+          "```",
+        ].join("\n"),
         operationId: "createProject",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/CreateProject" },
+              examples: {
+                "Public repo (no credential)": {
+                  summary: "Public repository",
+                  value: {
+                    title: "My Open-Source Project",
+                    repositoryUrl: "https://github.com/org/public-repo.git",
+                  },
+                },
+                "HTTPS with token": {
+                  summary: "Private repo with HTTPS token",
+                  value: {
+                    title: "My Private Project",
+                    repositoryUrl: "https://github.com/org/private-repo.git",
+                    credential: {
+                      type: "https_token",
+                      username: "git",
+                      token: "ghp_xxxxxxxxxxxxxxxxxxxx",
+                    },
+                  },
+                },
+                "SSH with key": {
+                  summary: "Private repo with SSH key",
+                  value: {
+                    title: "My Private Project",
+                    repositoryUrl: "git@github.com:org/private-repo.git",
+                    credential: {
+                      type: "ssh_key",
+                      privateKey:
+                        "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+                      passphrase: "optional-key-passphrase",
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -95,6 +143,11 @@ export const openApiSpec = {
       patch: {
         tags: ["Projects"],
         summary: "Update a project",
+        description: [
+          "Update project fields. Set `credential` to a new credential object to replace it, or `null` to clear it. Omit `credential` to leave it unchanged.",
+          "",
+          "**Sending SSH keys via curl:** See the POST endpoint for the `jq` one-liner to handle JSON escaping of private keys.",
+        ].join("\n"),
         operationId: "updateProject",
         parameters: [
           {
@@ -109,6 +162,36 @@ export const openApiSpec = {
           content: {
             "application/json": {
               schema: { $ref: "#/components/schemas/UpdateProject" },
+              examples: {
+                "Update title": {
+                  summary: "Rename a project",
+                  value: { title: "New Project Name" },
+                },
+                "Add HTTPS credential": {
+                  summary: "Add an HTTPS token to an existing project",
+                  value: {
+                    credential: {
+                      type: "https_token",
+                      username: "git",
+                      token: "ghp_xxxxxxxxxxxxxxxxxxxx",
+                    },
+                  },
+                },
+                "Add SSH credential": {
+                  summary: "Add an SSH key to an existing project",
+                  value: {
+                    credential: {
+                      type: "ssh_key",
+                      privateKey:
+                        "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+                    },
+                  },
+                },
+                "Clear credential": {
+                  summary: "Remove credentials from a project",
+                  value: { credential: null },
+                },
+              },
             },
           },
         },
@@ -131,6 +214,69 @@ export const openApiSpec = {
           },
           "404": {
             description: "Project not found",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/projects/{uuid}/credential": {
+      get: {
+        tags: ["Projects"],
+        summary: "Fetch a project credential (worker-only)",
+        description:
+          "Returns the decrypted credential for a project so a worker can clone a private repository. Requires a worker bearer token. The credential is never returned by the public project endpoints.",
+        operationId: "getProjectCredential",
+        security: [{ WorkerToken: [] }],
+        parameters: [
+          {
+            name: "uuid",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Decrypted credential",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ProjectCredential" },
+                examples: {
+                  "HTTPS token": {
+                    summary: "HTTPS token credential",
+                    value: {
+                      type: "https_token",
+                      username: "git",
+                      token: "ghp_xxxxxxxxxxxxxxxxxxxx",
+                    },
+                  },
+                  "SSH key": {
+                    summary: "SSH key credential",
+                    value: {
+                      type: "ssh_key",
+                      privateKey:
+                        "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+                      passphrase: "optional-key-passphrase",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Missing or invalid worker token",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Error" },
+              },
+            },
+          },
+          "404": {
+            description: "Project not found or no credential set",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Error" },
@@ -942,6 +1088,14 @@ export const openApiSpec = {
     },
   },
   components: {
+    securitySchemes: {
+      WorkerToken: {
+        type: "http",
+        scheme: "bearer",
+        description:
+          "Bearer token issued to a worker at registration. Used to authenticate worker-only endpoints.",
+      },
+    },
     parameters: {
       page: {
         name: "page",
@@ -991,7 +1145,16 @@ export const openApiSpec = {
       },
       Project: {
         type: "object",
-        required: ["@id", "uuid", "title", "createdAt", "updatedAt"],
+        required: [
+          "@id",
+          "uuid",
+          "title",
+          "description",
+          "repositoryUrl",
+          "credentialType",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
           "@id": {
             type: "string",
@@ -999,28 +1162,127 @@ export const openApiSpec = {
           },
           uuid: { type: "string", format: "uuid" },
           title: { type: "string", maxLength: 255 },
+          description: { type: ["string", "null"] },
+          repositoryUrl: {
+            type: ["string", "null"],
+            format: "uri",
+            maxLength: 2048,
+          },
+          credentialType: {
+            type: ["string", "null"],
+            enum: ["https_token", "ssh_key", null],
+            description:
+              "Type of credential stored for this project, or null when no credential is set. The credential value itself is never returned by this endpoint.",
+          },
           createdAt: { type: "string", format: "date-time" },
-          updatedAt: { type: "string", format: "date-time" },
+          updatedAt: { type: ["string", "null"], format: "date-time" },
+        },
+      },
+      ProjectCredential: {
+        oneOf: [
+          { $ref: "#/components/schemas/HttpsTokenCredential" },
+          { $ref: "#/components/schemas/SshKeyCredential" },
+        ],
+        discriminator: {
+          propertyName: "type",
+          mapping: {
+            https_token: "#/components/schemas/HttpsTokenCredential",
+            ssh_key: "#/components/schemas/SshKeyCredential",
+          },
+        },
+      },
+      HttpsTokenCredential: {
+        type: "object",
+        required: ["type", "token"],
+        description:
+          "HTTPS token credential. Use for private repos accessible via HTTP(S) URLs (GitHub PAT, GitLab token, Bitbucket app password, etc.).",
+        properties: {
+          type: { type: "string", enum: ["https_token"] },
+          username: {
+            type: "string",
+            maxLength: 255,
+            description: "Optional username (e.g. 'git' for GitHub).",
+          },
+          token: {
+            type: "string",
+            minLength: 1,
+            maxLength: 4096,
+            description: "Personal access token or deploy token.",
+          },
+        },
+        example: {
+          type: "https_token",
+          username: "git",
+          token: "ghp_xxxxxxxxxxxxxxxxxxxx",
+        },
+      },
+      SshKeyCredential: {
+        type: "object",
+        required: ["type", "privateKey"],
+        description:
+          "SSH key credential. Use for private repos accessible via SSH URLs (git@host:org/repo.git).",
+        properties: {
+          type: { type: "string", enum: ["ssh_key"] },
+          privateKey: {
+            type: "string",
+            minLength: 1,
+            maxLength: 16384,
+            description:
+              "Full PEM-encoded private key (OpenSSH or PEM format). Newlines must be JSON-escaped as \\n. Use `jq` to handle escaping: `jq -n --arg key \"$(cat ~/.ssh/id_ed25519)\" '{privateKey: $key}'`.",
+          },
+          passphrase: {
+            type: "string",
+            maxLength: 1024,
+            description: "Passphrase if the private key is encrypted.",
+          },
+        },
+        example: {
+          type: "ssh_key",
+          privateKey:
+            "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+          passphrase: "optional-key-passphrase",
         },
       },
       CreateProject: {
         type: "object",
         required: ["title"],
         properties: {
-          title: {
-            type: "string",
-            minLength: 1,
-            maxLength: 255,
+          title: { type: "string", minLength: 1, maxLength: 255 },
+          description: { type: ["string", "null"] },
+          repositoryUrl: {
+            type: ["string", "null"],
+            format: "uri",
+            maxLength: 2048,
+            description:
+              "Git repository URL. Use HTTPS for token auth (https://github.com/org/repo.git) or SSH for key auth (git@github.com:org/repo.git).",
+          },
+          credential: {
+            oneOf: [
+              { $ref: "#/components/schemas/ProjectCredential" },
+              { type: "null" },
+            ],
+            description:
+              "Optional credential used by workers to clone this project. Write-only; never returned in responses. Use `https_token` for HTTP(S) URLs and `ssh_key` for SSH URLs.",
           },
         },
       },
       UpdateProject: {
         type: "object",
         properties: {
-          title: {
-            type: "string",
-            minLength: 1,
-            maxLength: 255,
+          title: { type: "string", minLength: 1, maxLength: 255 },
+          description: { type: ["string", "null"] },
+          repositoryUrl: {
+            type: ["string", "null"],
+            format: "uri",
+            maxLength: 2048,
+          },
+          credential: {
+            oneOf: [
+              { $ref: "#/components/schemas/ProjectCredential" },
+              { type: "null" },
+            ],
+            description:
+              "Set to a credential object to add or replace, or null to clear. Omit to leave unchanged. Write-only — never returned in responses.",
           },
         },
       },

@@ -44,10 +44,13 @@ async function main(): Promise<void> {
     await engineClient.heartbeat(workerState.workerId);
   }
 
+  engineClient.setWorkerToken(workerState.token);
+
   const taskExecutor = new MockTaskExecutor();
   const projectSourceManager = new ProjectSourceManager(
     getProjectsBasePath(),
     logger,
+    engineClient,
   );
   const jobProcessor = new JobProcessor(
     engineClient,

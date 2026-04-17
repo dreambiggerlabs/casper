@@ -21,10 +21,25 @@ export interface Task {
   assignee: string | null;
 }
 
+export type CredentialType = "https_token" | "ssh_key";
+
 export interface Project {
   uuid: string;
   repositoryUrl: string | null;
+  credentialType: CredentialType | null;
 }
+
+export type ProjectCredential =
+  | {
+      type: "https_token";
+      username?: string;
+      token: string;
+    }
+  | {
+      type: "ssh_key";
+      privateKey: string;
+      passphrase?: string;
+    };
 
 export interface Worker {
   uuid: string;

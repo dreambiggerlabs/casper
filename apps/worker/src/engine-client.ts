@@ -1,7 +1,19 @@
-import type { Project, Task, Worker, WorkerJob } from "./types.js";
+import type {
+  Project,
+  ProjectCredential,
+  Task,
+  Worker,
+  WorkerJob,
+} from "./types.js";
 
 export class EngineClient {
+  private workerToken: string | null = null;
+
   constructor(private readonly engineUrl: string) {}
+
+  setWorkerToken(token: string): void {
+    this.workerToken = token;
+  }
 
   async registerWorker(name?: string): Promise<Worker> {
     const body = name ? { name } : {};
@@ -94,6 +106,28 @@ export class EngineClient {
     }
 
     return response.json() as Promise<Project>;
+  }
+
+  async getProjectCredential(
+    projectUuid: string,
+  ): Promise<ProjectCredential | null> {
+    if (!this.workerToken) {
+      throw new Error(
+        "Worker token not set on EngineClient; cannot fetch credential",
+      );
+    }
+    const response = await fetch(
+      `${this.engineUrl}/projects/${projectUuid}/credential`,
+      { headers: { Authorization: `Bearer ${this.workerToken}` } },
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      throw new Error(
+        `Failed to get project credential: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json() as Promise<ProjectCredential>;
   }
 
   async getTask(taskUuid: string): Promise<Task> {

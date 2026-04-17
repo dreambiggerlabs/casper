@@ -3,6 +3,7 @@ import { apiReference } from "@scalar/express-api-reference";
 
 import type { Database } from "./shared/database/index.js";
 import { errorHandler } from "./shared/middleware/error-handler.js";
+import { workerAuthMiddleware } from "./shared/middleware/worker-auth.js";
 import { openApiSpec } from "./shared/openapi/index.js";
 
 import { DrizzleProjectRepository } from "./project/project.repository.js";
@@ -59,8 +60,11 @@ export function createApp(db: Database) {
     userRepository,
   );
 
+  // Middleware
+  const workerAuth = workerAuthMiddleware(workerRepository);
+
   // Routes
-  app.use(createProjectRoutes(projectService));
+  app.use(createProjectRoutes(projectService, workerAuth));
   app.use(createAgentRoutes(agentService));
   app.use(createUserRoutes(userService));
   app.use(createWorkerRoutes(workerService));

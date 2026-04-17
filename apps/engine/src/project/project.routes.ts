@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 
 import {
   createHydraCollection,
@@ -7,7 +7,10 @@ import {
 
 import type { ProjectService } from "./project.service.js";
 
-export function createProjectRoutes(service: ProjectService): Router {
+export function createProjectRoutes(
+  service: ProjectService,
+  workerAuth: RequestHandler,
+): Router {
   const router = Router();
 
   router.post("/projects", async (req, res) => {
@@ -39,6 +42,15 @@ export function createProjectRoutes(service: ProjectService): Router {
     const project = await service.updateProject(uuid, req.body);
     res.json(project);
   });
+
+  router.get<{ uuid: string }>(
+    "/projects/:uuid/credential",
+    workerAuth,
+    async (req, res) => {
+      const credential = await service.getCredential(req.params.uuid);
+      res.json(credential);
+    },
+  );
 
   return router;
 }
