@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { NotFoundError, ValidationError } from "../../../src/shared/errors/index.js";
-import type { Database } from "../../../src/shared/database/index.js";
+import { NotFoundError } from "../../../src/shared/domain/error/not-found.error.js";
+import { ValidationError } from "../../../src/shared/domain/error/validation.error.js";
 
-import { WorkerService } from "../../../src/worker/worker.service.js";
-import type { WorkerRepository, WorkerJobRepository, Worker, WorkerJob } from "../../../src/worker/worker.types.js";
-
-const mockDatabase = {} as Database;
+import { WorkerService } from "../../../src/worker/application/service/worker.service.js";
+import type { WorkerRepository } from "../../../src/worker/application/port/worker.repository.js";
+import type { WorkerJobRepository } from "../../../src/worker/application/port/worker-job.repository.js";
+import type { Worker } from "../../../src/worker/domain/entity/worker.entity.js";
+import type { WorkerJob } from "../../../src/worker/domain/entity/worker-job.entity.js";
 
 function createMockWorkerRepository(): WorkerRepository {
   return {
@@ -30,6 +31,7 @@ function createMockWorkerJobRepository(): WorkerJobRepository {
     findJobsPaginated: vi.fn(),
     createJob: vi.fn(),
     updateJobStatus: vi.fn(),
+    claimAvailableTask: vi.fn(),
   };
 }
 
@@ -77,7 +79,7 @@ describe("WorkerService", () => {
 
       vi.mocked(workerRepository.create).mockResolvedValue(expectedWorker);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.registerWorker({ name: "Worker 1" });
 
       expect(result).toEqual(expectedWorker);
@@ -93,7 +95,7 @@ describe("WorkerService", () => {
 
       vi.mocked(workerRepository.create).mockResolvedValue(expectedWorker);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.registerWorker({});
 
       expect(result).toEqual(expectedWorker);
@@ -105,7 +107,7 @@ describe("WorkerService", () => {
     it("should throw ValidationError when name is empty string", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(service.registerWorker({ name: "" })).rejects.toThrow(
         ValidationError,
@@ -121,7 +123,7 @@ describe("WorkerService", () => {
       vi.mocked(workerRepository.findByUuid).mockResolvedValue(worker);
       vi.mocked(workerRepository.updateHeartbeat).mockResolvedValue(worker);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.heartbeat(worker.uuid);
 
       expect(result).toEqual(worker);
@@ -133,7 +135,7 @@ describe("WorkerService", () => {
       const workerJobRepository = createMockWorkerJobRepository();
       vi.mocked(workerRepository.findByUuid).mockResolvedValue(undefined);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(service.heartbeat("nonexistent")).rejects.toThrow(
         NotFoundError,
@@ -148,7 +150,7 @@ describe("WorkerService", () => {
       const expected = makeWorker();
       vi.mocked(workerRepository.findByUuid).mockResolvedValue(expected);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.getWorker(expected.uuid);
 
       expect(result).toEqual(expected);
@@ -159,7 +161,7 @@ describe("WorkerService", () => {
       const workerJobRepository = createMockWorkerJobRepository();
       vi.mocked(workerRepository.findByUuid).mockResolvedValue(undefined);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(service.getWorker("nonexistent")).rejects.toThrow(
         NotFoundError,
@@ -175,7 +177,7 @@ describe("WorkerService", () => {
       vi.mocked(workerRepository.findPaginated).mockResolvedValue(workers);
       vi.mocked(workerRepository.count).mockResolvedValue(2);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.listWorkers({ page: 1, itemsPerPage: 30 });
 
       expect(result).toEqual({ items: workers, totalItems: 2 });
@@ -194,7 +196,7 @@ describe("WorkerService", () => {
 
       vi.mocked(workerJobRepository.createJob).mockResolvedValue(expectedJob);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.createJob({
         worker: `/workers/${WORKER_UUID}`,
         type: "execute_task",
@@ -209,7 +211,7 @@ describe("WorkerService", () => {
     it("should throw ValidationError when type is invalid", async () => {
       const workerRepository = createMockWorkerRepository();
       const workerJobRepository = createMockWorkerJobRepository();
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(
         service.createJob({
@@ -227,7 +229,7 @@ describe("WorkerService", () => {
         makeWorkerJob({ task: `/tasks/${TASK_UUID}` }),
       );
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(
         service.createJob({
@@ -249,7 +251,7 @@ describe("WorkerService", () => {
       vi.mocked(workerJobRepository.findJobByUuid).mockResolvedValue(job);
       vi.mocked(workerJobRepository.updateJobStatus).mockResolvedValue(updatedJob);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.updateJobStatus(job.uuid, { status: "in_progress" });
 
       expect(result).toEqual(updatedJob);
@@ -269,7 +271,7 @@ describe("WorkerService", () => {
       vi.mocked(workerJobRepository.findJobByUuid).mockResolvedValue(job);
       vi.mocked(workerJobRepository.updateJobStatus).mockResolvedValue(updatedJob);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.updateJobStatus(job.uuid, {
         status: "failed",
         failReason: "Something broke",
@@ -288,7 +290,7 @@ describe("WorkerService", () => {
       const workerJobRepository = createMockWorkerJobRepository();
       vi.mocked(workerJobRepository.findJobByUuid).mockResolvedValue(undefined);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(
         service.updateJobStatus("nonexistent", { status: "completed" }),
@@ -307,7 +309,7 @@ describe("WorkerService", () => {
       vi.mocked(workerJobRepository.findJobsPaginated).mockResolvedValue(jobs);
       vi.mocked(workerJobRepository.countJobs).mockResolvedValue(1);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.listJobs(WORKER_UUID, undefined, pagination);
 
       expect(result).toEqual({ items: jobs, totalItems: 1 });
@@ -327,7 +329,7 @@ describe("WorkerService", () => {
       vi.mocked(workerJobRepository.findJobsPaginated).mockResolvedValue(jobs);
       vi.mocked(workerJobRepository.countJobs).mockResolvedValue(1);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.listJobs(WORKER_UUID, "ready", pagination);
 
       expect(result).toEqual({ items: jobs, totalItems: 1 });
@@ -347,7 +349,7 @@ describe("WorkerService", () => {
       const expected = makeWorkerJob();
       vi.mocked(workerJobRepository.findJobByUuid).mockResolvedValue(expected);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
       const result = await service.getJob(expected.uuid);
 
       expect(result).toEqual(expected);
@@ -358,7 +360,7 @@ describe("WorkerService", () => {
       const workerJobRepository = createMockWorkerJobRepository();
       vi.mocked(workerJobRepository.findJobByUuid).mockResolvedValue(undefined);
 
-      const service = new WorkerService(workerRepository, workerJobRepository, mockDatabase);
+      const service = new WorkerService(workerRepository, workerJobRepository);
 
       await expect(service.getJob("nonexistent")).rejects.toThrow(NotFoundError);
     });

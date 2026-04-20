@@ -1,16 +1,17 @@
 import { describe, it, expect } from "vitest";
 
-import {
-  parsePolymorphicIri,
-  polymorphicIriSchema,
-} from "../../../src/shared/iri/index.js";
+import { IriParser } from "../../../src/shared/domain/iri/iri-parser.js";
+import { IriSchemaFactory } from "../../../src/shared/domain/iri/iri-schema.factory.js";
+
+const iriParser = new IriParser();
+const iriSchemaFactory = new IriSchemaFactory(iriParser);
 
 const AGENT_UUID = "550e8400-e29b-41d4-a716-446655440002";
 const USER_UUID = "550e8400-e29b-41d4-a716-446655440020";
 
-describe("parsePolymorphicIri", () => {
+describe("IriParser.parsePolymorphic", () => {
   it("parses an agent IRI when agents is allowed", () => {
-    const result = parsePolymorphicIri(`/agents/${AGENT_UUID}`, [
+    const result = iriParser.parsePolymorphic(`/agents/${AGENT_UUID}`, [
       "agents",
       "users",
     ]);
@@ -18,7 +19,7 @@ describe("parsePolymorphicIri", () => {
   });
 
   it("parses a user IRI when users is allowed", () => {
-    const result = parsePolymorphicIri(`/users/${USER_UUID}`, [
+    const result = iriParser.parsePolymorphic(`/users/${USER_UUID}`, [
       "agents",
       "users",
     ]);
@@ -27,25 +28,25 @@ describe("parsePolymorphicIri", () => {
 
   it("throws when resource is not in the allowed list", () => {
     expect(() =>
-      parsePolymorphicIri(`/projects/${AGENT_UUID}`, ["agents", "users"]),
+      iriParser.parsePolymorphic(`/projects/${AGENT_UUID}`, ["agents", "users"]),
     ).toThrow(/Invalid IRI/);
   });
 
   it("throws when UUID segment is malformed", () => {
     expect(() =>
-      parsePolymorphicIri("/agents/not-a-uuid", ["agents", "users"]),
+      iriParser.parsePolymorphic("/agents/not-a-uuid", ["agents", "users"]),
     ).toThrow(/Invalid IRI/);
   });
 
   it("throws when IRI does not start with any known prefix", () => {
     expect(() =>
-      parsePolymorphicIri("garbage", ["agents", "users"]),
+      iriParser.parsePolymorphic("garbage", ["agents", "users"]),
     ).toThrow(/Invalid IRI/);
   });
 });
 
-describe("polymorphicIriSchema", () => {
-  const schema = polymorphicIriSchema(["agents", "users"]);
+describe("IriSchemaFactory.polymorphicIri", () => {
+  const schema = iriSchemaFactory.polymorphicIri(["agents", "users"]);
 
   it("transforms a valid agent IRI into { resource, uuid }", () => {
     const result = schema.safeParse(`/agents/${AGENT_UUID}`);

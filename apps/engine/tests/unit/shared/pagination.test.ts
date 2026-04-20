@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
 
-import {
-  createHydraCollection,
-  parsePaginationParams,
-} from "../../../src/shared/pagination/index.js";
+import { PaginationParser } from "../../../src/shared/application/pagination/pagination-parser.js";
+import { HydraCollectionBuilder } from "../../../src/shared/application/pagination/hydra-collection-builder.js";
 
-describe("createHydraCollection", () => {
+const paginationParser = new PaginationParser();
+const collectionBuilder = new HydraCollectionBuilder();
+
+describe("HydraCollectionBuilder", () => {
   it("should return a collection without view when all items fit on one page", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [{ id: 1 }, { id: 2 }],
       totalItems: 2,
       page: 1,
@@ -26,7 +27,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should include view with navigation links for multi-page results", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [{ id: 1 }],
       totalItems: 50,
       page: 2,
@@ -46,7 +47,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should not include previous on first page", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [{ id: 1 }],
       totalItems: 50,
       page: 1,
@@ -59,7 +60,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should not include next on last page", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [{ id: 1 }],
       totalItems: 50,
       page: 5,
@@ -72,7 +73,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should preserve extra query params in pagination URLs", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [],
       totalItems: 100,
       page: 1,
@@ -91,7 +92,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should handle empty collection", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [],
       totalItems: 0,
       page: 1,
@@ -105,7 +106,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should derive context name from basePath", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [],
       totalItems: 0,
       page: 1,
@@ -117,7 +118,7 @@ describe("createHydraCollection", () => {
   });
 
   it("should derive context name from nested basePath", () => {
-    const result = createHydraCollection({
+    const result = collectionBuilder.build({
       items: [],
       totalItems: 0,
       page: 1,
@@ -129,45 +130,45 @@ describe("createHydraCollection", () => {
   });
 });
 
-describe("parsePaginationParams", () => {
+describe("PaginationParser", () => {
   it("should return defaults when no params provided", () => {
-    const result = parsePaginationParams({});
+    const result = paginationParser.parse({});
 
     expect(result).toEqual({ page: 1, itemsPerPage: 30 });
   });
 
   it("should parse valid page and itemsPerPage", () => {
-    const result = parsePaginationParams({ page: "3", itemsPerPage: "15" });
+    const result = paginationParser.parse({ page: "3", itemsPerPage: "15" });
 
     expect(result).toEqual({ page: 3, itemsPerPage: 15 });
   });
 
   it("should clamp page to 1 when less than 1", () => {
-    const result = parsePaginationParams({ page: "0" });
+    const result = paginationParser.parse({ page: "0" });
 
     expect(result.page).toBe(1);
   });
 
   it("should clamp page to 1 when negative", () => {
-    const result = parsePaginationParams({ page: "-5" });
+    const result = paginationParser.parse({ page: "-5" });
 
     expect(result.page).toBe(1);
   });
 
   it("should clamp itemsPerPage to 100 when exceeding max", () => {
-    const result = parsePaginationParams({ itemsPerPage: "200" });
+    const result = paginationParser.parse({ itemsPerPage: "200" });
 
     expect(result.itemsPerPage).toBe(100);
   });
 
   it("should use default itemsPerPage when less than 1", () => {
-    const result = parsePaginationParams({ itemsPerPage: "0" });
+    const result = paginationParser.parse({ itemsPerPage: "0" });
 
     expect(result.itemsPerPage).toBe(30);
   });
 
   it("should use defaults for non-numeric values", () => {
-    const result = parsePaginationParams({
+    const result = paginationParser.parse({
       page: "abc",
       itemsPerPage: "xyz",
     });
@@ -176,7 +177,7 @@ describe("parsePaginationParams", () => {
   });
 
   it("should floor fractional values", () => {
-    const result = parsePaginationParams({
+    const result = paginationParser.parse({
       page: "2.7",
       itemsPerPage: "10.5",
     });

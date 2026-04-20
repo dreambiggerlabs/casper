@@ -1,12 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 
-import {
-  NotFoundError,
-  ValidationError,
-} from "../../../src/shared/errors/index.js";
+import { NotFoundError } from "../../../src/shared/domain/error/not-found.error.js";
+import { ValidationError } from "../../../src/shared/domain/error/validation.error.js";
 
-import { UserService } from "../../../src/user/user.service.js";
-import type { User, UserRepository } from "../../../src/user/user.types.js";
+import { UserService } from "../../../src/user/application/service/user.service.js";
+import type { UserRepository } from "../../../src/user/application/port/user.repository.js";
+import type { User } from "../../../src/user/domain/entity/user.entity.js";
 
 function createMockUserRepository(): UserRepository {
   return {

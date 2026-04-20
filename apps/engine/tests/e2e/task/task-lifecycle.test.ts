@@ -3,15 +3,17 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { startTestServer, type TestServer } from "../../helpers/create-app.js";
 import {
   createTestDatabase,
+  getTestDatabaseUrl,
   truncateAllTables,
   closeTestDatabase,
 } from "../../helpers/test-database.js";
 import { resetFixtureCounter } from "../../helpers/fixtures.js";
 
 const { db, client } = await createTestDatabase();
+const testDbUrl = getTestDatabaseUrl();
 let server: TestServer;
 
-server = await startTestServer(db);
+server = await startTestServer(testDbUrl);
 
 afterAll(async () => {
   await server.close();

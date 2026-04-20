@@ -1,12 +1,9 @@
 import "dotenv/config";
 
-import { db } from "./shared/database/index.js";
-import { logger } from "./shared/logging/logger.js";
-import { createApp } from "./app.js";
+import { EnvConfig } from "@/shared/infrastructure/config/env-config.js";
+import { Application } from "./application.js";
 
-const app = createApp(db);
-const port = process.env["PORT"] ?? 3000;
+const env = EnvConfig.load();
+const app = new Application(env);
 
-app.listen(port, () => {
-  logger.info({ port }, "Casper Engine listening");
-});
+app.listen(env.port);

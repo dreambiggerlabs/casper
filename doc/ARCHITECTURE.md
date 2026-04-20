@@ -51,7 +51,7 @@ The Worker separates **job orchestration** from **task execution** via the `Task
 - **Responsibilities:**
   - Providing a browser-based dashboard to interact with the engine.
   - Rendering tasks, agent status, and live logs.
-- **Tech Stack:** Vite, React, mobile-first CSS architecture.
+- **Tech Stack:** Vite, Vue 3, Tailwind CSS + shadcn-vue.
 
 ### 2.4 Database
 - **Role:** Persistent state, queue, and event store.
@@ -94,6 +94,10 @@ The Worker separates **job orchestration** from **task execution** via the `Task
 ### 3.6 Zod Validation
 **Decision:** Zod is used for all runtime validation.
 **Why:** Zod provides seamless TypeScript inference out-of-the-box for domain logic, keeping validation schemas and types in sync with zero duplication. A single validation library reduces cognitive overhead and dependency surface.
+
+### 3.7 Layered Architecture Inside Bounded Contexts
+**Decision:** Each bounded context is internally organised into four layers — `presentation/`, `application/`, `domain/`, `infrastructure/` — with a strict one-way dependency direction (presentation → application → domain). Infrastructure implements application ports and uses domain classes, but never the reverse. The domain layer is pure TypeScript with no framework imports. Every file exports a class or interface; free-function exports are forbidden. A single manual composition root (`Application` class) wires the entire dependency graph.
+**Why:** Separating concerns by layer ensures business logic stays framework-free and testable, prevents infrastructure leaks into the domain, and makes the dependency graph explicit and auditable. The OOP-only rule keeps the codebase consistent and amenable to constructor injection. The composition root avoids DI-container magic and keeps wiring visible.
 
 ---
 

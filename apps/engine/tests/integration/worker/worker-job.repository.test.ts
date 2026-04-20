@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 
-import { DrizzleWorkerJobRepository } from "../../../src/worker/worker.repository.js";
+import { DrizzleWorkerJobRepository } from "../../../src/worker/infrastructure/repository/drizzle-worker-job.repository.js";
 import {
   createTestDatabase,
   truncateAllTables,

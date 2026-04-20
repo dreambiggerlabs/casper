@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { sql } from "drizzle-orm";
 
-import { DrizzleProjectRepository } from "../../../src/project/project.repository.js";
+import { DrizzleProjectRepository } from "../../../src/project/infrastructure/repository/drizzle-project.repository.js";
+import { EncryptionService } from "../../../src/shared/infrastructure/crypto/encryption.service.js";
 import {
   createTestDatabase,
   truncateAllTables,
@@ -10,7 +11,10 @@ import {
 import { resetFixtureCounter } from "../../helpers/fixtures.js";
 
 const { db, client } = await createTestDatabase();
-const repo = new DrizzleProjectRepository(db);
+const encryption = new EncryptionService(
+  process.env["ENCRYPTION_KEY"] ?? "0".repeat(64),
+);
+const repo = new DrizzleProjectRepository(db, encryption);
 
 afterAll(async () => {
   await closeTestDatabase(client);

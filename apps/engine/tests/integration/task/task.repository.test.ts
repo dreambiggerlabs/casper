@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 
-import { DrizzleTaskRepository } from "../../../src/task/task.repository.js";
+import { DrizzleTaskRepository } from "../../../src/task/infrastructure/repository/drizzle-task.repository.js";
 import {
   createTestDatabase,
   truncateAllTables,

@@ -29,7 +29,7 @@ Before making changes, read in this order:
 4. `doc/ARCHITECTURE.md`
 5. `ROADMAP.md`
 
-**`doc/CONVENTIONS.md` is mandatory.** Every rule in that file — naming, structure, simplicity, SOLID, database conventions — must be followed without exception. Do not deviate, improvise, or take shortcuts. If your code does not conform to `CONVENTIONS.md`, it is wrong.
+**`doc/CONVENTIONS.md` is mandatory.** Every rule in that file — naming, structure, simplicity, SOLID, database conventions, **layered architecture** (4-layer split per domain, dependency direction, OOP-only rule, composition root) — must be followed without exception. Do not deviate, improvise, or take shortcuts. If your code does not conform to `CONVENTIONS.md`, it is wrong.
 
 **Architecture Updates:** When anything changes the architecture, `doc/ARCHITECTURE.md` must be updated accordingly.
 

@@ -1,9 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { NotFoundError, ValidationError } from "../../../src/shared/errors/index.js";
+import { NotFoundError } from "../../../src/shared/domain/error/not-found.error.js";
+import { ValidationError } from "../../../src/shared/domain/error/validation.error.js";
 
-import { AgentService } from "../../../src/agent/agent.service.js";
-import type { AgentRepository, Agent } from "../../../src/agent/agent.types.js";
+import { AgentService } from "../../../src/agent/application/service/agent.service.js";
+import type { AgentRepository } from "../../../src/agent/application/port/agent.repository.js";
+import type { Agent } from "../../../src/agent/domain/entity/agent.entity.js";
 
 function createMockAgentRepository(): AgentRepository {
   return {

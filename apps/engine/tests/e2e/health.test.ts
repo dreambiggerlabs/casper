@@ -2,14 +2,16 @@ import { describe, it, expect, afterAll } from "vitest";
 
 import { startTestServer, type TestServer } from "../helpers/create-app.js";
 import {
+  getTestDatabaseUrl,
   createTestDatabase,
   closeTestDatabase,
 } from "../helpers/test-database.js";
 
-const { db, client } = await createTestDatabase();
+const testDbUrl = getTestDatabaseUrl();
+const { client } = await createTestDatabase();
 let server: TestServer;
 
-server = await startTestServer(db);
+server = await startTestServer(testDbUrl);
 
 afterAll(async () => {
   await server.close();

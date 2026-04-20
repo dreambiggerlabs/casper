@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { startTestServer, type TestServer } from "../../helpers/create-app.js";
 import {
   createTestDatabase,
+  getTestDatabaseUrl,
   truncateAllTables,
   closeTestDatabase,
 } from "../../helpers/test-database.js";
@@ -14,9 +15,10 @@ import {
 } from "../../helpers/fixtures.js";
 
 const { db, client } = await createTestDatabase();
+const testDbUrl = getTestDatabaseUrl();
 let server: TestServer;
 
-server = await startTestServer(db);
+server = await startTestServer(testDbUrl);
 
 afterAll(async () => {
   await server.close();
@@ -86,7 +88,10 @@ describe("Worker lifecycle (E2E)", () => {
     // Claim task
     const claimRes = await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
 
@@ -111,7 +116,10 @@ describe("Worker lifecycle (E2E)", () => {
 
     const claimRes = await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
 
@@ -135,7 +143,10 @@ describe("Worker lifecycle (E2E)", () => {
 
     const claimRes = await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
 
@@ -170,7 +181,10 @@ describe("Worker lifecycle (E2E)", () => {
     // Claim task
     const claimRes = await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
     expect(claimRes.status).toBe(201);
@@ -182,7 +196,10 @@ describe("Worker lifecycle (E2E)", () => {
       `${server.baseUrl}/jobs/${job["uuid"]}/status`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${String(worker["token"])}`,
+        },
         body: JSON.stringify({ status: "in_progress" }),
       },
     );
@@ -193,7 +210,10 @@ describe("Worker lifecycle (E2E)", () => {
       `${server.baseUrl}/jobs/${job["uuid"]}/status`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${String(worker["token"])}`,
+        },
         body: JSON.stringify({ status: "completed" }),
       },
     );
@@ -221,7 +241,10 @@ describe("Worker lifecycle (E2E)", () => {
 
     await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
 
@@ -254,7 +277,10 @@ describe("Worker lifecycle (E2E)", () => {
 
     const claimRes = await fetch(`${server.baseUrl}/tasks/claim`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${String(worker["token"])}`,
+      },
       body: JSON.stringify({ worker: worker["@id"] }),
     });
     const claimed = (await claimRes.json()) as Record<string, unknown>;
@@ -264,7 +290,10 @@ describe("Worker lifecycle (E2E)", () => {
       `${server.baseUrl}/jobs/${job["uuid"]}/status`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${String(worker["token"])}`,
+        },
         body: JSON.stringify({
           status: "failed",
           failReason: "Out of memory",

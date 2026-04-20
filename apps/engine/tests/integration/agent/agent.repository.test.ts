@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 
-import { DrizzleAgentRepository } from "../../../src/agent/agent.repository.js";
+import { DrizzleAgentRepository } from "../../../src/agent/infrastructure/repository/drizzle-agent.repository.js";
 import {
   createTestDatabase,
   truncateAllTables,

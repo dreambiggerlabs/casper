@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 
-import {
-  DrizzleWorkerRepository,
-  DrizzleWorkerJobRepository,
-} from "../../../src/worker/worker.repository.js";
-import { WorkerService } from "../../../src/worker/worker.service.js";
+import { DrizzleWorkerRepository } from "../../../src/worker/infrastructure/repository/drizzle-worker.repository.js";
+import { DrizzleWorkerJobRepository } from "../../../src/worker/infrastructure/repository/drizzle-worker-job.repository.js";
+import { WorkerService } from "../../../src/worker/application/service/worker.service.js";
 import {
   createTestDatabase,
   truncateAllTables,
@@ -23,7 +21,7 @@ const { db, client } = await createTestDatabase();
 
 const workerRepository = new DrizzleWorkerRepository(db);
 const workerJobRepository = new DrizzleWorkerJobRepository(db);
-const service = new WorkerService(workerRepository, workerJobRepository, db);
+const service = new WorkerService(workerRepository, workerJobRepository);
 
 afterAll(async () => {
   await closeTestDatabase(client);

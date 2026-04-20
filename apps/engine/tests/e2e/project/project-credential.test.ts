@@ -4,6 +4,7 @@ import { startTestServer, type TestServer } from "../../helpers/create-app.js";
 import {
   closeTestDatabase,
   createTestDatabase,
+  getTestDatabaseUrl,
   truncateAllTables,
 } from "../../helpers/test-database.js";
 import {
@@ -12,7 +13,8 @@ import {
 } from "../../helpers/fixtures.js";
 
 const { db, client } = await createTestDatabase();
-const server: TestServer = await startTestServer(db);
+const testDbUrl = getTestDatabaseUrl();
+const server: TestServer = await startTestServer(testDbUrl);
 
 afterAll(async () => {
   await server.close();

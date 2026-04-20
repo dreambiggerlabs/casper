@@ -1,16 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
 
-import {
-  NotFoundError,
-  ValidationError,
-} from "../../../src/shared/errors/index.js";
+import { NotFoundError } from "../../../src/shared/domain/error/not-found.error.js";
+import { ValidationError } from "../../../src/shared/domain/error/validation.error.js";
+import { ReferenceResolver } from "../../../src/shared/application/reference/reference-resolver.js";
 
-import type { ProjectReader } from "../../../src/project/project.types.js";
-import type { AgentReader } from "../../../src/agent/agent.types.js";
-import type { UserReader } from "../../../src/user/user.types.js";
+import type { ProjectReader } from "../../../src/project/application/port/project.repository.js";
+import type { AgentReader } from "../../../src/agent/application/port/agent.repository.js";
+import type { UserReader } from "../../../src/user/application/port/user.repository.js";
 
-import { TaskService } from "../../../src/task/task.service.js";
-import type { TaskRepository, Task } from "../../../src/task/task.types.js";
+import { TaskService } from "../../../src/task/application/service/task.service.js";
+import type { TaskRepository } from "../../../src/task/application/port/task.repository.js";
+import type { Task } from "../../../src/task/domain/entity/task.entity.js";
+import type { AssigneeRef } from "../../../src/task/domain/value-object/assignee.value-object.js";
+import type { TaskStatus } from "../../../src/task/domain/value-object/task-status.value-object.js";
 
 function createMockTaskRepository(): TaskRepository {
   return {
@@ -118,12 +120,19 @@ function makeService(overrides: {
   const agentReader = overrides.agentReader ?? createMockAgentReader();
   const userReader = overrides.userReader ?? createMockUserReader();
 
+  const projectResolver = new ReferenceResolver<"projects">({
+    projects: projectReader,
+  });
+  const assigneeResolver = new ReferenceResolver<"agents" | "users">({
+    agents: agentReader,
+    users: userReader,
+  });
+
   return {
     service: new TaskService(
       taskRepository,
-      projectReader,
-      agentReader,
-      userReader,
+      projectResolver,
+      assigneeResolver,
     ),
     taskRepository,
     projectReader,
